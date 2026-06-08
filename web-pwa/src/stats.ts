@@ -44,7 +44,7 @@ export function setupStats(results: Result[], setups: Setup[]) {
   const map = new Map<string, CountStat>();
   results.forEach((result) => {
     const setup = setups.find((candidate) => candidate.id === result.setupId);
-    updateCountStat(map, result.setupId, setup?.name ?? deletedSetupLabel(), result);
+    updateCountStat(map, result.setupId, setup?.name ?? result.setupNameSnapshot ?? deletedSetupLabel(), result);
   });
   return sortedStats(map);
 }

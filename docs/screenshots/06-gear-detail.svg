@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="430" height="920" viewBox="0 0 430 920">
+  <rect width="430" height="920" fill="#d9c79e"/>
+  <rect x="16" y="16" width="398" height="888" rx="24" fill="#f7f2e6" stroke="#cebfa0"/>
+  <text x="36" y="54" font-size="18" fill="#5f685f" font-family="Arial, sans-serif">道具詳細</text>
+  <text x="36" y="92" font-size="28" font-weight="700" fill="#1f2c22" font-family="Arial, sans-serif">紫電 4g</text>
+  <rect x="28" y="132" width="374" height="168" rx="8" fill="#fffdf7" stroke="#cebfa0"/>
+  <text x="44" y="170" font-size="20" fill="#5f685f" font-family="Arial, sans-serif">釣果数</text><text x="374" y="170" text-anchor="end" font-size="20" font-weight="700" fill="#1f2c22" font-family="Arial, sans-serif">12匹</text>
+  <text x="44" y="206" font-size="20" fill="#5f685f" font-family="Arial, sans-serif">最大サイズ</text><text x="374" y="206" text-anchor="end" font-size="20" font-weight="700" fill="#1f2c22" font-family="Arial, sans-serif">42cm</text>
+  <text x="44" y="242" font-size="20" fill="#5f685f" font-family="Arial, sans-serif">よく釣れる月</text><text x="374" y="242" text-anchor="end" font-size="20" font-weight="700" fill="#1f2c22" font-family="Arial, sans-serif">6月</text>
+  <text x="44" y="278" font-size="20" fill="#5f685f" font-family="Arial, sans-serif">よく使うセット</text><text x="374" y="278" text-anchor="end" font-size="20" font-weight="700" fill="#1f2c22" font-family="Arial, sans-serif">渓流ベイト</text>
+  <rect x="28" y="320" width="374" height="276" rx="8" fill="#fffdf7" stroke="#cebfa0"/>
+  <text x="44" y="356" font-size="22" font-weight="700" fill="#1f2c22" font-family="Arial, sans-serif">最近の釣果</text>
+  <rect x="44" y="378" width="342" height="66" rx="8" fill="#ffffff" stroke="#cebfa0"/>
+  <text x="58" y="416" font-size="20" fill="#1f2c22" font-family="Arial, sans-serif">2026/06/08 ニジマス 32cm</text>
+  <text x="58" y="437" font-size="18" fill="#5f685f" font-family="Arial, sans-serif">渓流ベイト</text>
+  <rect x="44" y="456" width="342" height="66" rx="8" fill="#ffffff" stroke="#cebfa0"/>
+  <text x="58" y="494" font-size="20" fill="#1f2c22" font-family="Arial, sans-serif">2026/06/01 ヤマメ 24cm</text>
+  <text x="58" y="515" font-size="18" fill="#5f685f" font-family="Arial, sans-serif">渓流ベイト</text>
+  <rect x="44" y="534" width="342" height="66" rx="8" fill="#ffffff" stroke="#cebfa0"/>
+  <text x="58" y="572" font-size="20" fill="#1f2c22" font-family="Arial, sans-serif">2026/05/22 ニジマス 42cm</text>
+  <text x="58" y="593" font-size="18" fill="#5f685f" font-family="Arial, sans-serif">渓流ベイト</text>
+  <rect x="28" y="760" width="374" height="72" rx="8" fill="#284635"/>
+  <text x="215" y="805" text-anchor="middle" font-size="22" fill="#fffef9" font-family="Arial, sans-serif">この道具を使うセットを見る</text>
+</svg>

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="430" height="920" viewBox="0 0 430 920">
+  <rect width="430" height="920" fill="#d9c79e"/>
+  <rect x="16" y="16" width="398" height="888" rx="24" fill="#f7f2e6" stroke="#cebfa0"/>
+  <text x="36" y="54" font-size="18" fill="#5f685f" font-family="Arial, sans-serif">セット詳細</text>
+  <text x="36" y="92" font-size="28" font-weight="700" fill="#1f2c22" font-family="Arial, sans-serif">渓流ベイト</text>
+  <rect x="28" y="132" width="374" height="168" rx="8" fill="#fffdf7" stroke="#cebfa0"/>
+  <text x="44" y="170" font-size="20" fill="#5f685f" font-family="Arial, sans-serif">総釣果数</text><text x="374" y="170" text-anchor="end" font-size="20" font-weight="700" fill="#1f2c22" font-family="Arial, sans-serif">18匹</text>
+  <text x="44" y="206" font-size="20" fill="#5f685f" font-family="Arial, sans-serif">最大サイズ</text><text x="374" y="206" text-anchor="end" font-size="20" font-weight="700" fill="#1f2c22" font-family="Arial, sans-serif">42cm</text>
+  <text x="44" y="242" font-size="20" fill="#5f685f" font-family="Arial, sans-serif">主な魚種</text><text x="374" y="242" text-anchor="end" font-size="20" font-weight="700" fill="#1f2c22" font-family="Arial, sans-serif">ニジマス</text>
+  <text x="44" y="278" font-size="20" fill="#5f685f" font-family="Arial, sans-serif">主な場所</text><text x="374" y="278" text-anchor="end" font-size="20" font-weight="700" fill="#1f2c22" font-family="Arial, sans-serif">鮎沢川</text>
+  <rect x="28" y="320" width="374" height="280" rx="8" fill="#fffdf7" stroke="#cebfa0"/>
+  <text x="44" y="356" font-size="22" font-weight="700" fill="#1f2c22" font-family="Arial, sans-serif">構成装備</text>
+  <rect x="44" y="374" width="342" height="52" rx="8" fill="#ffffff" stroke="#cebfa0"/><text x="58" y="406" font-size="20" fill="#1f2c22" font-family="Arial, sans-serif">ロッド</text><text x="370" y="406" text-anchor="end" font-size="20" fill="#1f2c22" font-family="Arial, sans-serif">カワセミ 48UL</text>
+  <rect x="44" y="438" width="342" height="52" rx="8" fill="#ffffff" stroke="#cebfa0"/><text x="58" y="470" font-size="20" fill="#1f2c22" font-family="Arial, sans-serif">リール</text><text x="370" y="470" text-anchor="end" font-size="20" fill="#1f2c22" font-family="Arial, sans-serif">ABU 2500C</text>
+  <rect x="44" y="502" width="342" height="52" rx="8" fill="#ffffff" stroke="#cebfa0"/><text x="58" y="534" font-size="20" fill="#1f2c22" font-family="Arial, sans-serif">ライン</text><text x="370" y="534" text-anchor="end" font-size="20" fill="#1f2c22" font-family="Arial, sans-serif">PE 0.6</text>
+  <rect x="44" y="566" width="342" height="52" rx="8" fill="#ffffff" stroke="#cebfa0"/><text x="58" y="598" font-size="20" fill="#1f2c22" font-family="Arial, sans-serif">ルアー</text><text x="370" y="598" text-anchor="end" font-size="20" fill="#1f2c22" font-family="Arial, sans-serif">紫電 4g</text>
+  <rect x="44" y="632" width="342" height="60" rx="8" fill="#efe4c8" stroke="#cebfa0"/>
+  <text x="215" y="670" text-anchor="middle" font-size="22" fill="#1f2c22" font-family="Arial, sans-serif">装備を追加する</text>
+  <rect x="28" y="760" width="374" height="72" rx="8" fill="#284635"/>
+  <text x="215" y="805" text-anchor="middle" font-size="22" fill="#fffef9" font-family="Arial, sans-serif">このセットをもう一度使う</text>
+</svg>

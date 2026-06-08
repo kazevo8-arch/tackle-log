@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="430" height="920" viewBox="0 0 430 920">
+  <rect width="430" height="920" fill="#d9c79e"/>
+  <rect x="16" y="16" width="398" height="888" rx="24" fill="#f7f2e6" stroke="#cebfa0"/>
+  <text x="36" y="54" font-size="18" fill="#5f685f" font-family="Arial, sans-serif">実績</text>
+  <text x="36" y="92" font-size="28" font-weight="700" fill="#1f2c22" font-family="Arial, sans-serif">前回当たったセットを、次も使う</text>
+  <rect x="28" y="132" width="374" height="152" rx="8" fill="#fffdf7" stroke="#cebfa0"/>
+  <text x="44" y="166" font-size="22" font-weight="700" fill="#1f2c22" font-family="Arial, sans-serif">よく釣れるセット</text>
+  <text x="44" y="204" font-size="21" fill="#1f2c22" font-family="Arial, sans-serif">渓流ベイト</text>
+  <text x="332" y="204" font-size="20" text-anchor="end" fill="#1f2c22" font-family="Arial, sans-serif">42cm</text>
+  <text x="44" y="230" font-size="18" fill="#5f685f" font-family="Arial, sans-serif">釣果 18匹 / 最終使用 2026/06/08</text>
+  <rect x="44" y="242" width="334" height="64" rx="8" fill="#284635"/>
+  <text x="211" y="282" text-anchor="middle" font-size="22" fill="#fffef9" font-family="Arial, sans-serif">このセットをもう一度使う</text>
+  <rect x="28" y="302" width="374" height="132" rx="8" fill="#fffdf7" stroke="#cebfa0"/>
+  <text x="44" y="336" font-size="22" font-weight="700" fill="#1f2c22" font-family="Arial, sans-serif">よく釣れるルアー</text>
+  <text x="44" y="374" font-size="21" fill="#1f2c22" font-family="Arial, sans-serif">紫電 4g</text>
+  <text x="332" y="374" font-size="20" text-anchor="end" fill="#1f2c22" font-family="Arial, sans-serif">42cm</text>
+  <text x="44" y="400" font-size="18" fill="#5f685f" font-family="Arial, sans-serif">釣果 12匹</text>
+  <rect x="28" y="452" width="374" height="132" rx="8" fill="#fffdf7" stroke="#cebfa0"/>
+  <text x="44" y="486" font-size="22" font-weight="700" fill="#1f2c22" font-family="Arial, sans-serif">ロッド別最大魚</text>
+  <text x="44" y="524" font-size="21" fill="#1f2c22" font-family="Arial, sans-serif">カワセミ 48UL</text>
+  <text x="332" y="524" font-size="20" text-anchor="end" fill="#1f2c22" font-family="Arial, sans-serif">42cm</text>
+  <rect x="28" y="602" width="374" height="132" rx="8" fill="#fffdf7" stroke="#cebfa0"/>
+  <text x="44" y="636" font-size="22" font-weight="700" fill="#1f2c22" font-family="Arial, sans-serif">場所別実績</text>
+  <text x="44" y="674" font-size="21" fill="#1f2c22" font-family="Arial, sans-serif">鮎沢川</text>
+  <text x="332" y="674" font-size="20" text-anchor="end" fill="#1f2c22" font-family="Arial, sans-serif">42cm</text>
+  <text x="44" y="700" font-size="18" fill="#5f685f" font-family="Arial, sans-serif">釣果 14匹 / 最終使用 2026/06/08</text>
+</svg>

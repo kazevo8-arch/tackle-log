@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="430" height="920" viewBox="0 0 430 920">
+  <rect width="430" height="920" fill="#d9c79e"/>
+  <rect x="16" y="16" width="398" height="888" rx="24" fill="#f7f2e6" stroke="#cebfa0"/>
+  <text x="36" y="54" font-size="18" fill="#5f685f" font-family="Arial, sans-serif">釣果追加</text>
+  <text x="36" y="92" font-size="28" font-weight="700" fill="#1f2c22" font-family="Arial, sans-serif">30秒で記録する</text>
+  <rect x="28" y="132" width="374" height="172" rx="8" fill="#fffdf7" stroke="#cebfa0"/>
+  <text x="44" y="166" font-size="20" font-weight="700" fill="#1f2c22" font-family="Arial, sans-serif">魚種</text>
+  <rect x="44" y="184" width="76" height="64" rx="8" fill="#d7e4d0" stroke="#284635"/><text x="82" y="223" text-anchor="middle" font-size="20" fill="#1f2c22" font-family="Arial, sans-serif">ヤマメ</text>
+  <rect x="130" y="184" width="76" height="64" rx="8" fill="#ffffff" stroke="#cebfa0"/><text x="168" y="223" text-anchor="middle" font-size="20" fill="#1f2c22" font-family="Arial, sans-serif">イワナ</text>
+  <rect x="216" y="184" width="76" height="64" rx="8" fill="#ffffff" stroke="#cebfa0"/><text x="254" y="223" text-anchor="middle" font-size="20" fill="#1f2c22" font-family="Arial, sans-serif">ニジマス</text>
+  <rect x="302" y="184" width="76" height="64" rx="8" fill="#ffffff" stroke="#cebfa0"/><text x="340" y="223" text-anchor="middle" font-size="20" fill="#1f2c22" font-family="Arial, sans-serif">その他</text>
+  <rect x="44" y="258" width="334" height="64" rx="8" fill="#ffffff" stroke="#cebfa0"/>
+  <text x="60" y="298" font-size="20" fill="#5f685f" font-family="Arial, sans-serif">魚種を入力しなくても保存できます</text>
+  <rect x="28" y="322" width="374" height="218" rx="8" fill="#fffdf7" stroke="#cebfa0"/>
+  <text x="44" y="356" font-size="20" font-weight="700" fill="#1f2c22" font-family="Arial, sans-serif">サイズ</text>
+  <rect x="44" y="374" width="56" height="64" rx="8" fill="#d7e4d0" stroke="#284635"/><text x="72" y="414" text-anchor="middle" font-size="22" fill="#1f2c22" font-family="Arial, sans-serif">20</text>
+  <rect x="110" y="374" width="56" height="64" rx="8" fill="#ffffff" stroke="#cebfa0"/><text x="138" y="414" text-anchor="middle" font-size="22" fill="#1f2c22" font-family="Arial, sans-serif">25</text>
+  <rect x="176" y="374" width="56" height="64" rx="8" fill="#ffffff" stroke="#cebfa0"/><text x="204" y="414" text-anchor="middle" font-size="22" fill="#1f2c22" font-family="Arial, sans-serif">30</text>
+  <rect x="242" y="374" width="56" height="64" rx="8" fill="#ffffff" stroke="#cebfa0"/><text x="270" y="414" text-anchor="middle" font-size="22" fill="#1f2c22" font-family="Arial, sans-serif">35</text>
+  <rect x="308" y="374" width="56" height="64" rx="8" fill="#ffffff" stroke="#cebfa0"/><text x="336" y="414" text-anchor="middle" font-size="22" fill="#1f2c22" font-family="Arial, sans-serif">40</text>
+  <rect x="44" y="452" width="96" height="64" rx="8" fill="#efe4c8" stroke="#cebfa0"/><text x="92" y="492" text-anchor="middle" font-size="22" fill="#1f2c22" font-family="Arial, sans-serif">-1</text>
+  <text x="215" y="492" text-anchor="middle" font-size="28" font-weight="700" fill="#1f2c22" font-family="Arial, sans-serif">32cm</text>
+  <rect x="290" y="452" width="96" height="64" rx="8" fill="#efe4c8" stroke="#cebfa0"/><text x="338" y="492" text-anchor="middle" font-size="22" fill="#1f2c22" font-family="Arial, sans-serif">+1</text>
+  <rect x="28" y="558" width="374" height="112" rx="8" fill="#fffdf7" stroke="#cebfa0"/>
+  <text x="44" y="592" font-size="20" font-weight="700" fill="#1f2c22" font-family="Arial, sans-serif">使用ルアー / フライ</text>
+  <rect x="44" y="608" width="334" height="64" rx="8" fill="#ffffff" stroke="#cebfa0"/>
+  <text x="60" y="648" font-size="20" fill="#1f2c22" font-family="Arial, sans-serif">紫電 4g</text>
+  <rect x="28" y="690" width="374" height="96" rx="8" fill="#fffdf7" stroke="#cebfa0"/>
+  <text x="44" y="724" font-size="20" font-weight="700" fill="#1f2c22" font-family="Arial, sans-serif">写真</text>
+  <rect x="44" y="736" width="334" height="40" rx="8" fill="#ffffff" stroke="#cebfa0"/>
+  <text x="60" y="763" font-size="18" fill="#5f685f" font-family="Arial, sans-serif">写真なしでも保存できます</text>
+  <rect x="28" y="798" width="374" height="72" rx="8" fill="#284635"/>
+  <text x="215" y="843" text-anchor="middle" font-size="22" fill="#fffef9" font-family="Arial, sans-serif">保存する</text>
+</svg>

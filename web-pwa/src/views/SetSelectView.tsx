@@ -23,6 +23,14 @@ export function SetSelectView({ snapshot, onEditSetup, onRouteChange, onUsePrima
           装備一覧
         </button>
       </div>
+      <div className="action-row">
+        <button className="button button-primary button-compact" type="button" onClick={() => onEditSetup()}>
+          新しいセットを作る
+        </button>
+        <button className="button button-secondary button-compact" type="button" onClick={() => onRouteChange("items")}>
+          装備を追加する
+        </button>
+      </div>
       {snapshot.setups.length ? (
         snapshot.setups.map((setup) => {
           const primaryItems = setupPrimaryItems(setup, snapshot.items);

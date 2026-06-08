@@ -75,6 +75,17 @@ export function SetupEditView({ setupId, snapshot, onBack, onSaved }: SetupEditV
     onSaved();
   }
 
+  async function remove() {
+    if (!existing) return;
+    if (snapshot.appState?.currentSetupId === existing.id) {
+      window.alert("現在使用中セットは削除できません。");
+      return;
+    }
+    if (!window.confirm("このセットを削除しますか？")) return;
+    await db.setups.delete(existing.id);
+    onSaved();
+  }
+
   return (
     <main className="screen-content">
       <ScreenHeader title={existing ? "セット編集" : "セット作成"} description="セットへ装備を追加し、現在使用中候補を作ります。" />
@@ -150,6 +161,11 @@ export function SetupEditView({ setupId, snapshot, onBack, onSaved }: SetupEditV
       <button className="button button-primary" type="button" onClick={save}>
         保存する
       </button>
+      {existing ? (
+        <button className="button button-secondary" type="button" onClick={remove}>
+          削除する
+        </button>
+      ) : null}
     </main>
   );
 }

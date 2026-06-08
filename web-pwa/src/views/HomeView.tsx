@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import type { AppRoute } from "../routes";
 import type { AppSnapshot } from "../App";
-import { FlashNotice, PhotoCard, ScreenHeader, SetupSummary } from "../components";
+import { BlobImage, FlashNotice, PhotoCard, ScreenHeader, SetupSummary } from "../components";
+import { deletedItemLabel, deletedSetupLabel } from "../domain";
 
 type HomeViewProps = {
   homeNotice?: string;
@@ -27,10 +28,11 @@ export function HomeView({ homeNotice, onRouteChange, onStartSession, scrollToke
   const currentSetup = snapshot.setups.find((setup) => setup.id === appState?.currentSetupId);
   const currentPlace = snapshot.places.find((place) => place.id === appState?.currentPlaceId);
   const currentPrimaryItem = snapshot.items.find((item) => item.id === appState?.currentPrimaryItemId);
-  const previousResult = snapshot.results[0];
-  const previousSetup = snapshot.setups.find((setup) => setup.id === previousResult?.setupId);
-  const previousPlace = snapshot.places.find((place) => place.id === previousResult?.placeId);
-  const previousPrimaryItem = snapshot.items.find((item) => item.id === previousResult?.primaryItemId);
+  const latestResult = [...snapshot.results].sort((a, b) => b.caughtAt.localeCompare(a.caughtAt))[0];
+  const latestSetup = snapshot.setups.find((setup) => setup.id === latestResult?.setupId);
+  const latestPlace = snapshot.places.find((place) => place.id === latestResult?.placeId);
+  const latestPrimaryItem = snapshot.items.find((item) => item.id === latestResult?.primaryItemId);
+  const latestMedia = snapshot.media.find((media) => media.id === latestResult?.fishMediaId);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
@@ -53,11 +55,11 @@ export function HomeView({ homeNotice, onRouteChange, onStartSession, scrollToke
               </div>
               <div>
                 <dt>セット</dt>
-                <dd>{currentSetup?.name ?? "未選択"}</dd>
+                <dd>{currentSetup?.name ?? deletedSetupLabel()}</dd>
               </div>
               <div>
                 <dt>使用中</dt>
-                <dd>{currentPrimaryItem?.name ?? "未選択"}</dd>
+                <dd>{currentPrimaryItem?.name ?? deletedItemLabel()}</dd>
               </div>
               <div>
                 <dt>ポイント</dt>
@@ -89,22 +91,24 @@ export function HomeView({ homeNotice, onRouteChange, onStartSession, scrollToke
         title={currentPrimaryItem?.name ?? "現在使用中 未選択"}
         photoLabel="使用中"
         hint="タップして変更"
-        lines={[
-          currentPrimaryItem ? `${currentPrimaryItem.note || "実績メモなし"}` : "ルアー / フライ / 毛鉤 / 餌から選択",
-        ]}
+        lines={[currentPrimaryItem ? currentPrimaryItem.note || "実績メモなし" : "ルアー / フライ / 毛鉤 / 餌から選択"]}
         onClick={() => onRouteChange("set-select")}
       />
 
       <PhotoCard
+        title={currentPlace?.riverName ?? "現在河川 未選択"}
+        photoLabel="河川"
+        hint="タップして変更"
+        lines={[currentPlace ? `${currentPlace.areaName} / ${currentPlace.pointName}` : "河川を選ぶとポイント候補が絞れます"]}
+        onClick={() => onRouteChange("rivers")}
+      />
+
+      <PhotoCard
         badge={currentPlace?.isFavorite ? "★ お気に入り" : undefined}
-        title={currentPlace?.pointName ?? "現在ポイント未選択"}
+        title={currentPlace ? `${currentPlace.areaName} / ${currentPlace.pointName}` : "現在ポイント未選択"}
         photoLabel="ポイント"
         hint="タップして変更"
-        lines={
-          currentPlace
-            ? [`${currentPlace.riverName} / ${currentPlace.areaName}`, currentPlace.note || "ポイントメモなし"]
-            : ["ポイントを選ぶと場所実績に反映されます"]
-        }
+        lines={[currentPlace ? currentPlace.note || "ポイントメモなし" : "ポイントを選ぶと場所実績に反映されます"]}
         onClick={() => onRouteChange("places")}
       />
 
@@ -115,16 +119,19 @@ export function HomeView({ homeNotice, onRouteChange, onStartSession, scrollToke
         実績を見る
       </button>
 
-      {previousResult ? (
-        <PhotoCard
-          badge="前回釣行"
-          title={`${previousResult.species} ${previousResult.sizeCm}cm`}
-          photoLabel="魚"
-          lines={[
-            `${previousPlace?.riverName ?? ""} / ${previousPlace?.areaName ?? ""} / ${previousPlace?.pointName ?? ""}`,
-            `${previousSetup?.name ?? "セット未記録"} + ${previousPrimaryItem?.name ?? "ルアー未記録"}`,
-          ]}
-        />
+      {latestResult ? (
+        <article className="result-card">
+          <BlobImage alt="最新釣果" className="result-thumb" media={latestMedia} placeholder="魚写真なし" />
+          <div className="result-body">
+            <h2>
+              {latestResult.species} {latestResult.sizeCm}cm
+            </h2>
+            <p>{latestPlace?.riverName ?? "河川未記録"}</p>
+            <p>{latestPlace ? `${latestPlace.areaName} / ${latestPlace.pointName}` : "ポイント未記録"}</p>
+            <p>{latestSetup?.name ?? deletedSetupLabel()}</p>
+            <p>{latestPrimaryItem?.name ?? deletedItemLabel()}</p>
+          </div>
+        </article>
       ) : null}
     </main>
   );

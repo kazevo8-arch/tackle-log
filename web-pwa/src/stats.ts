@@ -1,4 +1,4 @@
-import { placeLabel, primaryItemKinds } from "./domain";
+import { deletedItemLabel, deletedSetupLabel, placeLabel, primaryItemKinds } from "./domain";
 import type { Item, Place, Result, Setup } from "./models";
 
 export type CountStat = {
@@ -44,7 +44,7 @@ export function setupStats(results: Result[], setups: Setup[]) {
   const map = new Map<string, CountStat>();
   results.forEach((result) => {
     const setup = setups.find((candidate) => candidate.id === result.setupId);
-    updateCountStat(map, result.setupId, setup?.name ?? "セット未記録", result);
+    updateCountStat(map, result.setupId, setup?.name ?? deletedSetupLabel(), result);
   });
   return sortedStats(map);
 }
@@ -64,7 +64,7 @@ export function itemStats(results: Result[], items: Item[]) {
     const itemId = result.primaryItemId ?? result.usedItemIds.find((id) => primaryItemKinds.includes(items.find((item) => item.id === id)?.kind ?? "other"));
     if (!itemId) return;
     const item = items.find((candidate) => candidate.id === itemId);
-    updateCountStat(map, itemId, item?.name ?? "ルアー未記録", result);
+    updateCountStat(map, itemId, item?.name ?? deletedItemLabel(), result);
   });
   return sortedStats(map);
 }
@@ -84,7 +84,7 @@ export function placeRecommendedItems(results: Result[], places: Place[], items:
             });
           if (!itemId) return;
           const item = items.find((candidate) => candidate.id === itemId);
-          const current = map.get(itemId) ?? { itemId, itemName: item?.name ?? "ルアー未記録", count: 0, maxSize: 0 };
+          const current = map.get(itemId) ?? { itemId, itemName: item?.name ?? deletedItemLabel(), count: 0, maxSize: 0 };
           current.count += 1;
           current.maxSize = Math.max(current.maxSize, result.sizeCm);
           map.set(itemId, current);

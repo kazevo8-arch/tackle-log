@@ -3,7 +3,7 @@ import { db } from "./db";
 import { seedMockData } from "./mockData";
 import type { AppRoute } from "./routes";
 import { routes } from "./routes";
-import type { AppState, Item, ItemCategory, ItemKind, Place, Result, Session, Setup } from "./models";
+import type { AppState, Item, ItemCategory, ItemKind, Media, Place, Result, Session, Setup } from "./models";
 import { HomeView } from "./views/HomeView";
 import { ItemsView } from "./views/ItemsView";
 import { ItemEditView } from "./views/ItemEditView";
@@ -13,6 +13,8 @@ import { SetupEditView } from "./views/SetupEditView";
 import { PlacesView } from "./views/PlacesView";
 import { PlaceEditView } from "./views/PlaceEditView";
 import { ResultAddView } from "./views/ResultAddView";
+import { ResultsView } from "./views/ResultsView";
+import { RiversView } from "./views/RiversView";
 import { StatsView } from "./views/StatsView";
 import { nowIso, uid } from "./domain";
 
@@ -20,6 +22,7 @@ export type AppSnapshot = {
   appState?: AppState;
   itemCategories: ItemCategory[];
   items: Item[];
+  media: Media[];
   places: Place[];
   results: Result[];
   sessions: Session[];
@@ -30,6 +33,7 @@ const emptySnapshot: AppSnapshot = {
   appState: undefined,
   itemCategories: [],
   items: [],
+  media: [],
   places: [],
   results: [],
   sessions: [],
@@ -37,16 +41,17 @@ const emptySnapshot: AppSnapshot = {
 };
 
 async function loadSnapshot(): Promise<AppSnapshot> {
-  const [appState, itemCategories, items, places, results, sessions, setups] = await Promise.all([
+  const [appState, itemCategories, items, media, places, results, sessions, setups] = await Promise.all([
     db.appState.get("main"),
     db.itemCategories.toArray(),
     db.items.toArray(),
+    db.media.toArray(),
     db.places.toArray(),
     db.results.toArray(),
     db.sessions.toArray(),
     db.setups.toArray(),
   ]);
-  return { appState, itemCategories, items, places, results, sessions, setups };
+  return { appState, itemCategories, items, media, places, results, sessions, setups };
 }
 
 function PlaceholderView({ route }: { route: AppRoute }) {
@@ -66,7 +71,7 @@ function BottomNav({ route, onRouteChange }: { route: AppRoute; onRouteChange: (
   const navItems: { id: AppRoute; label: string }[] = [
     { id: "home", label: "ホーム" },
     { id: "set-select", label: "セット" },
-    { id: "result-add", label: "釣果" },
+    { id: "results", label: "釣果" },
     { id: "stats", label: "実績" },
   ];
 
@@ -93,6 +98,8 @@ export default function App() {
   const [editingSetupId, setEditingSetupId] = useState<string | undefined>();
   const [editingPlaceId, setEditingPlaceId] = useState<string | undefined>();
   const [draftItemKind, setDraftItemKind] = useState<ItemKind | undefined>();
+  const [selectedRiverName, setSelectedRiverName] = useState<string | undefined>();
+  const [preferredRiverName, setPreferredRiverName] = useState<string | undefined>();
   const [homeNotice, setHomeNotice] = useState<string | undefined>();
   const [homeScrollToken, setHomeScrollToken] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -176,6 +183,7 @@ export default function App() {
 
   async function usePlace(placeId: string) {
     const updatedAt = nowIso();
+    const place = snapshot.places.find((item) => item.id === placeId);
     await db.transaction("rw", [db.appState, db.places, db.sessions], async () => {
       await db.appState.update("main", {
         currentPlaceId: placeId,
@@ -192,6 +200,7 @@ export default function App() {
         updatedAt,
       });
     });
+    setSelectedRiverName(place?.riverName);
     await refresh();
     returnHomeWithNotice("更新しました");
   }
@@ -228,7 +237,7 @@ export default function App() {
       return;
     }
     if (!placeId) {
-      setRoute("places");
+      setRoute("rivers");
       return;
     }
     const setup = snapshot.setups.find((item) => item.id === setupId);
@@ -274,8 +283,9 @@ export default function App() {
     setRoute("setup-edit");
   }
 
-  function openPlaceEditor(placeId?: string) {
+  function openPlaceEditor(placeId?: string, riverName?: string) {
     setEditingPlaceId(placeId);
+    setPreferredRiverName(riverName);
     setRoute("place-edit");
   }
 
@@ -296,6 +306,8 @@ export default function App() {
             snapshot={snapshot}
           />
         );
+      case "results":
+        return <ResultsView snapshot={snapshot} onAddResult={() => setRoute("result-add")} />;
       case "result-add":
         return <ResultAddView snapshot={snapshot} onRouteChange={setRoute} onSaved={() => handleSaved("home")} />;
       case "items":
@@ -331,12 +343,32 @@ export default function App() {
             onSaved={() => handleSaved("setups")}
           />
         );
+      case "rivers":
+        return (
+          <RiversView
+            snapshot={snapshot}
+            onAddPlace={() => openPlaceEditor(undefined)}
+            onSelectRiver={(riverName) => {
+              setSelectedRiverName(riverName);
+              setRoute("places");
+            }}
+          />
+        );
       case "places":
-        return <PlacesView snapshot={snapshot} onEditPlace={openPlaceEditor} onUsePlace={usePlace} />;
+        return (
+          <PlacesView
+            selectedRiverName={selectedRiverName}
+            snapshot={snapshot}
+            onEditPlace={(placeId) => openPlaceEditor(placeId, selectedRiverName)}
+            onRouteChange={setRoute}
+            onUsePlace={usePlace}
+          />
+        );
       case "place-edit":
         return (
           <PlaceEditView
             placeId={editingPlaceId}
+            preferredRiverName={preferredRiverName}
             snapshot={snapshot}
             onBack={() => setRoute("places")}
             onSaved={() => handleSaved("places")}

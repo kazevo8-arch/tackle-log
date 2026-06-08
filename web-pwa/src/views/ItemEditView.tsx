@@ -27,6 +27,7 @@ export function ItemEditView({ initialKind, itemId, snapshot, onBack, onSaved }:
   const [tagsText, setTagsText] = useState(existing?.tags.join(", ") ?? "");
   const [selectedStyles, setSelectedStyles] = useState<string[]>(existing?.fishingStyles ?? []);
   const category = snapshot.itemCategories.find((item) => item.id === categoryId);
+  const usedBySetups = snapshot.setups.filter((setup) => setup.items.some((entry) => entry.itemId === existing?.id));
 
   function toggleStyle(styleId: string) {
     setSelectedStyles((current) => (current.includes(styleId) ? current.filter((value) => value !== styleId) : [...current, styleId]));
@@ -49,6 +50,30 @@ export function ItemEditView({ initialKind, itemId, snapshot, onBack, onSaved }:
       mediaId: existing?.mediaId,
       createdAt: existing?.createdAt ?? updatedAt,
       updatedAt,
+    });
+    onSaved();
+  }
+
+  async function remove() {
+    if (!existing) return;
+    if (snapshot.appState?.currentPrimaryItemId === existing.id) {
+      window.alert("現在使用中の装備は削除できません。");
+      return;
+    }
+    const usageMessage = usedBySetups.length ? `\nこの装備は${usedBySetups.length}件のセットで利用中です。セットからも外れます。` : "";
+    if (!window.confirm(`この装備を削除しますか？${usageMessage}`)) return;
+
+    await db.transaction("rw", [db.items, db.setups], async () => {
+      await db.items.delete(existing.id);
+      const affectedSetups = snapshot.setups.filter((setup) => setup.items.some((entry) => entry.itemId === existing.id));
+      for (const setup of affectedSetups) {
+        await db.setups.put({
+          ...setup,
+          items: setup.items.filter((entry) => entry.itemId !== existing.id),
+          defaultPrimaryItemId: setup.defaultPrimaryItemId === existing.id ? undefined : setup.defaultPrimaryItemId,
+          updatedAt: nowIso(),
+        });
+      }
     });
     onSaved();
   }
@@ -116,6 +141,11 @@ export function ItemEditView({ initialKind, itemId, snapshot, onBack, onSaved }:
       <button className="button button-primary" type="button" onClick={save}>
         保存する
       </button>
+      {existing ? (
+        <button className="button button-secondary" type="button" onClick={remove}>
+          削除する
+        </button>
+      ) : null}
     </main>
   );
 }

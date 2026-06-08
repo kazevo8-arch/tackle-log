@@ -103,6 +103,10 @@ export function placeLabel(place: Place) {
   return `${place.riverName} / ${place.areaName} / ${place.pointName}`;
 }
 
+export function uniqueRiverNames(places: Place[]) {
+  return [...new Set(places.map((place) => place.riverName).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ja-JP"));
+}
+
 export function sortPlacesForMvp(places: Place[]) {
   return [...places].sort((a, b) => {
     if (a.isFavorite !== b.isFavorite) return a.isFavorite ? -1 : 1;
@@ -111,6 +115,14 @@ export function sortPlacesForMvp(places: Place[]) {
     if (aTime !== bTime) return bTime - aTime;
     return placeLabel(a).localeCompare(placeLabel(b), "ja-JP");
   });
+}
+
+export function deletedSetupLabel() {
+  return "削除済みセット";
+}
+
+export function deletedItemLabel() {
+  return "削除済み装備";
 }
 
 export function nowIso() {

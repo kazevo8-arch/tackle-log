@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { setupDisplayEntries } from "./domain";
-import type { Item, Setup } from "./models";
+import type { Item, Media, Setup } from "./models";
 
 export function ScreenHeader({ title, description }: { title: string; description: string }) {
   return (
@@ -99,4 +99,34 @@ export function SetupSummary({ items, setup }: { items: Item[]; setup: Setup | u
 export function FlashNotice({ message }: { message?: string }) {
   if (!message) return null;
   return <p className="toast toast-success">{message}</p>;
+}
+
+export function BlobImage({
+  alt,
+  className,
+  media,
+  placeholder,
+}: {
+  alt: string;
+  className?: string;
+  media?: Media;
+  placeholder: string;
+}) {
+  const [url, setUrl] = useState<string | undefined>();
+
+  useEffect(() => {
+    if (!media?.thumbnailBlob) {
+      setUrl(undefined);
+      return;
+    }
+    const objectUrl = URL.createObjectURL(media.thumbnailBlob);
+    setUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [media]);
+
+  if (!url) {
+    return <div className={className ?? "thumb-placeholder"}>{placeholder}</div>;
+  }
+
+  return <img alt={alt} className={className} src={url} />;
 }

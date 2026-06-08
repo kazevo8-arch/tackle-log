@@ -3,8 +3,10 @@ import { EmptyState, PhotoCard, ScreenHeader } from "../components";
 import type { Place } from "../models";
 
 type PlacesViewProps = {
+  selectedRiverName?: string;
   snapshot: AppSnapshot;
   onEditPlace: (placeId?: string) => void;
+  onRouteChange: (route: "rivers") => void;
   onUsePlace: (placeId: string) => void;
 };
 
@@ -88,25 +90,29 @@ function PlaceSection({
   );
 }
 
-export function PlacesView({ snapshot, onEditPlace, onUsePlace }: PlacesViewProps) {
-  const favorites = snapshot.places
+export function PlacesView({ selectedRiverName, snapshot, onEditPlace, onRouteChange, onUsePlace }: PlacesViewProps) {
+  const visiblePlaces = selectedRiverName ? snapshot.places.filter((place) => place.riverName === selectedRiverName) : snapshot.places;
+  const favorites = visiblePlaces
     .filter((place) => place.isFavorite)
     .sort((a, b) => (b.lastUsedAt ?? "").localeCompare(a.lastUsedAt ?? ""));
-  const recent = snapshot.places
+  const recent = visiblePlaces
     .filter((place) => !place.isFavorite && place.lastUsedAt)
     .sort((a, b) => (b.lastUsedAt ?? "").localeCompare(a.lastUsedAt ?? ""));
-  const others = snapshot.places
+  const others = visiblePlaces
     .filter((place) => !place.isFavorite && !place.lastUsedAt)
     .sort((a, b) => a.riverName.localeCompare(b.riverName, "ja-JP") || a.areaName.localeCompare(b.areaName, "ja-JP"));
 
   return (
     <main className="screen-content">
       <ScreenHeader title="河川・ポイント管理" description="河川、エリア、ポイント名を登録し、今日の釣果へ自動反映します。" />
+      <button className="button button-secondary" type="button" onClick={() => onRouteChange("rivers")}>
+        河川を選ぶ
+      </button>
       <button className="button button-secondary" type="button" onClick={() => onEditPlace()}>
         ＋ ポイントを追加
       </button>
 
-      {snapshot.places.length ? (
+      {visiblePlaces.length ? (
         <>
           <PlaceSection
             currentPlaceId={snapshot.appState?.currentPlaceId}
@@ -131,7 +137,7 @@ export function PlacesView({ snapshot, onEditPlace, onUsePlace }: PlacesViewProp
           />
         </>
       ) : (
-        <EmptyState>ポイントがありません。最初の河川・エリア・ポイントを追加してください。</EmptyState>
+        <EmptyState>{selectedRiverName ? "この河川にはポイントがありません。最初のポイントを追加してください。" : "ポイントがありません。最初の河川・エリア・ポイントを追加してください。"}</EmptyState>
       )}
     </main>
   );

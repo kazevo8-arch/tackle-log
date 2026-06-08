@@ -8,6 +8,7 @@ export type AppRoute =
   | "setups"
   | "setup-edit"
   | "places"
+  | "place-edit"
   | "stats"
   | "settings";
 
@@ -21,6 +22,7 @@ export const routes: { id: AppRoute; label: string }[] = [
   { id: "setups", label: "セット一覧" },
   { id: "setup-edit", label: "セット編集" },
   { id: "places", label: "場所管理" },
+  { id: "place-edit", label: "ポイント編集" },
   { id: "stats", label: "実績" },
   { id: "settings", label: "設定/バックアップ" },
 ];

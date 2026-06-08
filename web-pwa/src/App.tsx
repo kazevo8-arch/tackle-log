@@ -10,6 +10,8 @@ import { ItemEditView } from "./views/ItemEditView";
 import { SetupsView } from "./views/SetupsView";
 import { SetSelectView } from "./views/SetSelectView";
 import { SetupEditView } from "./views/SetupEditView";
+import { PlacesView } from "./views/PlacesView";
+import { PlaceEditView } from "./views/PlaceEditView";
 
 export type AppSnapshot = {
   appState?: AppState;
@@ -86,6 +88,7 @@ export default function App() {
   const [snapshot, setSnapshot] = useState<AppSnapshot>(emptySnapshot);
   const [editingItemId, setEditingItemId] = useState<string | undefined>();
   const [editingSetupId, setEditingSetupId] = useState<string | undefined>();
+  const [editingPlaceId, setEditingPlaceId] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
 
   async function refresh() {
@@ -137,6 +140,22 @@ export default function App() {
     setRoute("home");
   }
 
+  async function usePlace(placeId: string) {
+    const updatedAt = new Date().toISOString();
+    await db.transaction("rw", [db.appState, db.places], async () => {
+      await db.appState.update("main", {
+        currentPlaceId: placeId,
+        updatedAt,
+      });
+      await db.places.update(placeId, {
+        lastUsedAt: updatedAt,
+        updatedAt,
+      });
+    });
+    await refresh();
+    setRoute("home");
+  }
+
   function openItemEditor(itemId?: string) {
     setEditingItemId(itemId);
     setRoute("item-edit");
@@ -145,6 +164,11 @@ export default function App() {
   function openSetupEditor(setupId?: string) {
     setEditingSetupId(setupId);
     setRoute("setup-edit");
+  }
+
+  function openPlaceEditor(placeId?: string) {
+    setEditingPlaceId(placeId);
+    setRoute("place-edit");
   }
 
   async function handleSaved(routeAfterSave: AppRoute) {
@@ -169,6 +193,17 @@ export default function App() {
         );
       case "setups":
         return <SetupsView snapshot={snapshot} onEditSetup={openSetupEditor} onUseSetup={useSetup} />;
+      case "places":
+        return <PlacesView snapshot={snapshot} onEditPlace={openPlaceEditor} onUsePlace={usePlace} />;
+      case "place-edit":
+        return (
+          <PlaceEditView
+            placeId={editingPlaceId}
+            snapshot={snapshot}
+            onBack={() => setRoute("places")}
+            onSaved={() => handleSaved("places")}
+          />
+        );
       case "set-select":
         return (
           <SetSelectView

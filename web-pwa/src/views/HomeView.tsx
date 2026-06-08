@@ -107,7 +107,7 @@ export function HomeView({ snapshot, onRouteChange }: HomeViewProps) {
         }
       />
       <button className="button button-secondary" type="button" onClick={() => onRouteChange("places")}>
-        ポイントを変更
+        {currentPlace ? "ポイントを変更" : "ポイントを選択"}
       </button>
 
       <button className="button button-primary" type="button" onClick={() => onRouteChange("result-add")}>

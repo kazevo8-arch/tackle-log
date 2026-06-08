@@ -295,6 +295,40 @@ textarea {
   line-height: 1.45;
 }
 
+.place-tree,
+.river-group,
+.area-group {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.river-group {
+  border-left: 6px solid var(--primary);
+  padding-left: 12px;
+}
+
+.river-group h3,
+.area-group h4 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.river-group h3 {
+  font-size: 24px;
+}
+
+.area-group {
+  border-left: 3px solid var(--line);
+  padding-left: 12px;
+}
+
+.area-group h4 {
+  color: var(--muted);
+  font-size: 21px;
+}
+
 .metric-list {
   display: grid;
   gap: 8px;

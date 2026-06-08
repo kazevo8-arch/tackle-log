@@ -443,6 +443,88 @@ textarea {
   text-align: right;
 }
 
+.reuse-grid,
+.recommendation-list {
+  display: grid;
+  gap: 10px;
+}
+
+.reuse-card {
+  min-height: 108px;
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--primary);
+  border-radius: 14px;
+  background: white;
+  color: var(--text);
+  padding: 14px;
+  text-align: left;
+}
+
+.reuse-card span,
+.reuse-card small,
+.ranking-row span {
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.reuse-card strong {
+  font-size: 22px;
+  overflow-wrap: anywhere;
+}
+
+.recommendation-card {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgb(255 255 255 / 0.48);
+  padding: 12px;
+}
+
+.recommendation-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 116px;
+  gap: 10px;
+  align-items: center;
+}
+
+.recommendation-header h3 {
+  margin: 0;
+  font-size: 22px;
+  overflow-wrap: anywhere;
+}
+
+.ranking-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ranking-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 92px;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: white;
+  padding: 10px;
+}
+
+.ranking-row div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ranking-row strong {
+  font-size: 20px;
+  overflow-wrap: anywhere;
+}
+
 .bottom-nav {
   position: fixed;
   left: 50%;

@@ -14,6 +14,7 @@ import { PlacesView } from "./views/PlacesView";
 import { PlaceEditView } from "./views/PlaceEditView";
 import { ResultAddView } from "./views/ResultAddView";
 import { nowIso, uid } from "./domain";
+import { StatsView } from "./views/StatsView";
 
 export type AppSnapshot = {
   appState?: AppState;
@@ -184,6 +185,30 @@ export default function App() {
     setRoute("home");
   }
 
+  async function useItemFromStats(itemId: string) {
+    const currentSetup = snapshot.setups.find((setup) => setup.id === snapshot.appState?.currentSetupId);
+    const setup = currentSetup?.items.some((item) => item.itemId === itemId)
+      ? currentSetup
+      : snapshot.setups.find((candidate) => candidate.items.some((item) => item.itemId === itemId));
+    const updatedAt = nowIso();
+    await db.transaction("rw", [db.appState, db.sessions], async () => {
+      await db.appState.update("main", {
+        currentSetupId: setup?.id ?? snapshot.appState?.currentSetupId,
+        currentPrimaryItemId: itemId,
+        updatedAt,
+      });
+      if (snapshot.appState?.activeSessionId) {
+        await db.sessions.update(snapshot.appState.activeSessionId, {
+          setupId: setup?.id ?? snapshot.appState.currentSetupId,
+          currentPrimaryItemId: itemId,
+          updatedAt,
+        });
+      }
+    });
+    await refresh();
+    setRoute("home");
+  }
+
   async function startSession() {
     const setupId = snapshot.appState?.currentSetupId;
     const placeId = snapshot.appState?.currentPlaceId;
@@ -267,6 +292,8 @@ export default function App() {
         return <SetupsView snapshot={snapshot} onEditSetup={openSetupEditor} onUseSetup={useSetup} />;
       case "places":
         return <PlacesView snapshot={snapshot} onEditPlace={openPlaceEditor} onUsePlace={usePlace} />;
+      case "stats":
+        return <StatsView snapshot={snapshot} onUseItem={useItemFromStats} onUsePlace={usePlace} onUseSetup={useSetup} />;
       case "place-edit":
         return (
           <PlaceEditView

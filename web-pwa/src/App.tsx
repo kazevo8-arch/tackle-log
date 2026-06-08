@@ -12,6 +12,8 @@ import { SetSelectView } from "./views/SetSelectView";
 import { SetupEditView } from "./views/SetupEditView";
 import { PlacesView } from "./views/PlacesView";
 import { PlaceEditView } from "./views/PlaceEditView";
+import { ResultAddView } from "./views/ResultAddView";
+import { nowIso, uid } from "./domain";
 
 export type AppSnapshot = {
   appState?: AppState;
@@ -121,20 +123,40 @@ export default function App() {
   async function useSetup(setupId: string) {
     const setup = snapshot.setups.find((item) => item.id === setupId);
     const primaryItemId = setup?.defaultPrimaryItemId ?? setup?.items.find((item) => item.role === "primary")?.itemId;
-    await db.appState.update("main", {
-      currentSetupId: setupId,
-      currentPrimaryItemId: primaryItemId,
-      updatedAt: new Date().toISOString(),
+    const updatedAt = nowIso();
+    await db.transaction("rw", [db.appState, db.sessions], async () => {
+      await db.appState.update("main", {
+        currentSetupId: setupId,
+        currentPrimaryItemId: primaryItemId,
+        updatedAt,
+      });
+      if (snapshot.appState?.activeSessionId) {
+        await db.sessions.update(snapshot.appState.activeSessionId, {
+          setupId,
+          currentPrimaryItemId: primaryItemId,
+          updatedAt,
+        });
+      }
     });
     await refresh();
     setRoute("home");
   }
 
   async function usePrimaryItem(setupId: string, itemId: string) {
-    await db.appState.update("main", {
-      currentSetupId: setupId,
-      currentPrimaryItemId: itemId,
-      updatedAt: new Date().toISOString(),
+    const updatedAt = nowIso();
+    await db.transaction("rw", [db.appState, db.sessions], async () => {
+      await db.appState.update("main", {
+        currentSetupId: setupId,
+        currentPrimaryItemId: itemId,
+        updatedAt,
+      });
+      if (snapshot.appState?.activeSessionId) {
+        await db.sessions.update(snapshot.appState.activeSessionId, {
+          setupId,
+          currentPrimaryItemId: itemId,
+          updatedAt,
+        });
+      }
     });
     await refresh();
     setRoute("home");
@@ -142,11 +164,17 @@ export default function App() {
 
   async function usePlace(placeId: string) {
     const updatedAt = new Date().toISOString();
-    await db.transaction("rw", [db.appState, db.places], async () => {
+    await db.transaction("rw", [db.appState, db.places, db.sessions], async () => {
       await db.appState.update("main", {
         currentPlaceId: placeId,
         updatedAt,
       });
+      if (snapshot.appState?.activeSessionId) {
+        await db.sessions.update(snapshot.appState.activeSessionId, {
+          placeId,
+          updatedAt,
+        });
+      }
       await db.places.update(placeId, {
         lastUsedAt: updatedAt,
         updatedAt,
@@ -154,6 +182,48 @@ export default function App() {
     });
     await refresh();
     setRoute("home");
+  }
+
+  async function startSession() {
+    const setupId = snapshot.appState?.currentSetupId;
+    const placeId = snapshot.appState?.currentPlaceId;
+    if (!setupId) {
+      setRoute("set-select");
+      return;
+    }
+    if (!placeId) {
+      setRoute("places");
+      return;
+    }
+    const setup = snapshot.setups.find((item) => item.id === setupId);
+    const place = snapshot.places.find((item) => item.id === placeId);
+    if (!setup || !place) return;
+
+    const createdAt = nowIso();
+    const sessionId = uid("session");
+    await db.transaction("rw", [db.sessions, db.appState, db.places], async () => {
+      await db.sessions.put({
+        id: sessionId,
+        title: `${place.riverName} ${place.areaName}`,
+        setupId,
+        placeId,
+        currentPrimaryItemId: snapshot.appState?.currentPrimaryItemId,
+        status: "active",
+        startedAt: createdAt,
+        note: "",
+        createdAt,
+        updatedAt: createdAt,
+      });
+      await db.appState.update("main", {
+        activeSessionId: sessionId,
+        updatedAt: createdAt,
+      });
+      await db.places.update(placeId, {
+        lastUsedAt: createdAt,
+        updatedAt: createdAt,
+      });
+    });
+    await refresh();
   }
 
   function openItemEditor(itemId?: string) {
@@ -179,7 +249,9 @@ export default function App() {
   function renderRoute() {
     switch (route) {
       case "home":
-        return <HomeView snapshot={snapshot} onRouteChange={setRoute} />;
+        return <HomeView snapshot={snapshot} onRouteChange={setRoute} onStartSession={startSession} />;
+      case "result-add":
+        return <ResultAddView snapshot={snapshot} onRouteChange={setRoute} onSaved={() => handleSaved("home")} />;
       case "items":
         return <ItemsView snapshot={snapshot} onEditItem={openItemEditor} />;
       case "item-edit":

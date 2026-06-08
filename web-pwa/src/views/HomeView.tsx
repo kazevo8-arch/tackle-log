@@ -5,6 +5,7 @@ import { PhotoCard, ScreenHeader } from "../components";
 type HomeViewProps = {
   snapshot: AppSnapshot;
   onRouteChange: (route: AppRoute) => void;
+  onStartSession: () => void;
 };
 
 function formatDateTime(value?: string) {
@@ -17,7 +18,7 @@ function formatDateTime(value?: string) {
   }).format(new Date(value));
 }
 
-export function HomeView({ snapshot, onRouteChange }: HomeViewProps) {
+export function HomeView({ snapshot, onRouteChange, onStartSession }: HomeViewProps) {
   const appState = snapshot.appState;
   const activeSession = snapshot.sessions.find((session) => session.id === appState?.activeSessionId);
   const currentSetup = snapshot.setups.find((setup) => setup.id === appState?.currentSetupId);
@@ -59,7 +60,7 @@ export function HomeView({ snapshot, onRouteChange }: HomeViewProps) {
         ) : (
           <>
             <h2>釣行は開始していません</h2>
-            <button className="button button-secondary" type="button">
+            <button className="button button-secondary" type="button" onClick={onStartSession}>
               このセットで釣行開始
             </button>
           </>

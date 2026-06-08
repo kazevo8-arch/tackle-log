@@ -44,6 +44,35 @@ export class FishingLogDatabase extends Dexie {
           }
         });
       });
+
+    this.version(3)
+      .stores({
+        itemCategories: "&id, kind, sortOrder",
+        items: "&id, categoryId, kind, updatedAt",
+        setups: "&id, updatedAt",
+        sessions: "&id, status, startedAt, endedAt, setupId, placeId",
+        results: "&id, sessionId, setupId, placeId, primaryItemId, *usedItemIds, species, sizeCm, caughtAt",
+        places: "&id, [riverName+areaName+pointName], isFavorite, lastUsedAt, updatedAt",
+        media: "&id, mimeType, createdAt",
+        appState: "&id, activeSessionId, currentSetupId, currentPlaceId",
+      })
+      .upgrade(async (transaction) => {
+        const items = transaction.table("items");
+        const setups = transaction.table("setups");
+        await items.toCollection().modify((item) => {
+          if (!Array.isArray(item.fishingStyles)) {
+            item.fishingStyles = item.kind === "fly" ? ["fly"] : item.kind === "hook" ? ["tenkara"] : item.kind === "bait" ? ["bait_fishing"] : item.kind === "lure" ? ["mountain_stream_bait", "spinning"] : ["other"];
+          }
+          if (!Array.isArray(item.tags)) {
+            item.tags = [];
+          }
+        });
+        await setups.toCollection().modify((setup) => {
+          if (!setup.fishingStyle) {
+            setup.fishingStyle = "other";
+          }
+        });
+      });
   }
 }
 

@@ -1,5 +1,13 @@
 export type ISODateString = string;
 
+export type FishingStyle =
+  | "mountain_stream_bait"
+  | "spinning"
+  | "fly"
+  | "tenkara"
+  | "bait_fishing"
+  | "other";
+
 export type ItemKind =
   | "rod"
   | "reel"
@@ -13,8 +21,6 @@ export type ItemKind =
   | "waders"
   | "polarized_glasses"
   | "other";
-
-export type FishingMethod = "spinning" | "bait" | "fly_fishing" | "tenkara" | "bait_fishing";
 
 export type ItemCategory = {
   id: string;
@@ -31,6 +37,8 @@ export type Item = {
   kind: ItemKind;
   name: string;
   note: string;
+  fishingStyles: FishingStyle[];
+  tags: string[];
   mediaId?: string;
   createdAt: ISODateString;
   updatedAt: ISODateString;
@@ -53,7 +61,7 @@ export type SetupItem = {
 export type Setup = {
   id: string;
   name: string;
-  fishingMethods: FishingMethod[];
+  fishingStyle: FishingStyle;
   items: SetupItem[];
   defaultPrimaryItemId?: string;
   mediaId?: string;

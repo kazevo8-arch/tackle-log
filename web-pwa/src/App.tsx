@@ -3,7 +3,7 @@ import { db } from "./db";
 import { seedMockData } from "./mockData";
 import type { AppRoute } from "./routes";
 import { routes } from "./routes";
-import type { AppState, Item, ItemCategory, Place, Result, Session, Setup } from "./models";
+import type { AppState, Item, ItemCategory, ItemKind, Place, Result, Session, Setup } from "./models";
 import { HomeView } from "./views/HomeView";
 import { ItemsView } from "./views/ItemsView";
 import { ItemEditView } from "./views/ItemEditView";
@@ -13,8 +13,8 @@ import { SetupEditView } from "./views/SetupEditView";
 import { PlacesView } from "./views/PlacesView";
 import { PlaceEditView } from "./views/PlaceEditView";
 import { ResultAddView } from "./views/ResultAddView";
-import { nowIso, uid } from "./domain";
 import { StatsView } from "./views/StatsView";
+import { nowIso, uid } from "./domain";
 
 export type AppSnapshot = {
   appState?: AppState;
@@ -27,6 +27,7 @@ export type AppSnapshot = {
 };
 
 const emptySnapshot: AppSnapshot = {
+  appState: undefined,
   itemCategories: [],
   items: [],
   places: [],
@@ -45,7 +46,6 @@ async function loadSnapshot(): Promise<AppSnapshot> {
     db.sessions.toArray(),
     db.setups.toArray(),
   ]);
-
   return { appState, itemCategories, items, places, results, sessions, setups };
 }
 
@@ -92,16 +92,17 @@ export default function App() {
   const [editingItemId, setEditingItemId] = useState<string | undefined>();
   const [editingSetupId, setEditingSetupId] = useState<string | undefined>();
   const [editingPlaceId, setEditingPlaceId] = useState<string | undefined>();
+  const [draftItemKind, setDraftItemKind] = useState<ItemKind | undefined>();
+  const [homeNotice, setHomeNotice] = useState<string | undefined>();
+  const [homeScrollToken, setHomeScrollToken] = useState(0);
   const [loading, setLoading] = useState(true);
 
   async function refresh() {
-    const nextSnapshot = await loadSnapshot();
-    setSnapshot(nextSnapshot);
+    setSnapshot(await loadSnapshot());
   }
 
   useEffect(() => {
     let cancelled = false;
-
     async function boot() {
       await seedMockData();
       const nextSnapshot = await loadSnapshot();
@@ -110,16 +111,26 @@ export default function App() {
         setLoading(false);
       }
     }
-
     boot().catch((error) => {
       console.error(error);
       if (!cancelled) setLoading(false);
     });
-
     return () => {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!homeNotice) return;
+    const timeoutId = window.setTimeout(() => setHomeNotice(undefined), 1500);
+    return () => window.clearTimeout(timeoutId);
+  }, [homeNotice]);
+
+  function returnHomeWithNotice(message: string) {
+    setHomeNotice(message);
+    setHomeScrollToken((current) => current + 1);
+    setRoute("home");
+  }
 
   async function useSetup(setupId: string) {
     const setup = snapshot.setups.find((item) => item.id === setupId);
@@ -140,7 +151,7 @@ export default function App() {
       }
     });
     await refresh();
-    setRoute("home");
+    returnHomeWithNotice("更新しました");
   }
 
   async function usePrimaryItem(setupId: string, itemId: string) {
@@ -160,11 +171,11 @@ export default function App() {
       }
     });
     await refresh();
-    setRoute("home");
+    returnHomeWithNotice("更新しました");
   }
 
   async function usePlace(placeId: string) {
-    const updatedAt = new Date().toISOString();
+    const updatedAt = nowIso();
     await db.transaction("rw", [db.appState, db.places, db.sessions], async () => {
       await db.appState.update("main", {
         currentPlaceId: placeId,
@@ -182,7 +193,7 @@ export default function App() {
       });
     });
     await refresh();
-    setRoute("home");
+    returnHomeWithNotice("更新しました");
   }
 
   async function useItemFromStats(itemId: string) {
@@ -206,7 +217,7 @@ export default function App() {
       }
     });
     await refresh();
-    setRoute("home");
+    returnHomeWithNotice("更新しました");
   }
 
   async function startSession() {
@@ -249,10 +260,12 @@ export default function App() {
       });
     });
     await refresh();
+    returnHomeWithNotice("更新しました");
   }
 
-  function openItemEditor(itemId?: string) {
+  function openItemEditor(itemId?: string, initialKind?: ItemKind) {
     setEditingItemId(itemId);
+    setDraftItemKind(initialKind);
     setRoute("item-edit");
   }
 
@@ -274,7 +287,15 @@ export default function App() {
   function renderRoute() {
     switch (route) {
       case "home":
-        return <HomeView snapshot={snapshot} onRouteChange={setRoute} onStartSession={startSession} />;
+        return (
+          <HomeView
+            homeNotice={homeNotice}
+            onRouteChange={setRoute}
+            onStartSession={startSession}
+            scrollToken={homeScrollToken}
+            snapshot={snapshot}
+          />
+        );
       case "result-add":
         return <ResultAddView snapshot={snapshot} onRouteChange={setRoute} onSaved={() => handleSaved("home")} />;
       case "items":
@@ -282,6 +303,7 @@ export default function App() {
       case "item-edit":
         return (
           <ItemEditView
+            initialKind={draftItemKind}
             itemId={editingItemId}
             snapshot={snapshot}
             onBack={() => setRoute("items")}
@@ -290,19 +312,6 @@ export default function App() {
         );
       case "setups":
         return <SetupsView snapshot={snapshot} onEditSetup={openSetupEditor} onUseSetup={useSetup} />;
-      case "places":
-        return <PlacesView snapshot={snapshot} onEditPlace={openPlaceEditor} onUsePlace={usePlace} />;
-      case "stats":
-        return <StatsView snapshot={snapshot} onUseItem={useItemFromStats} onUsePlace={usePlace} onUseSetup={useSetup} />;
-      case "place-edit":
-        return (
-          <PlaceEditView
-            placeId={editingPlaceId}
-            snapshot={snapshot}
-            onBack={() => setRoute("places")}
-            onSaved={() => handleSaved("places")}
-          />
-        );
       case "set-select":
         return (
           <SetSelectView
@@ -322,6 +331,19 @@ export default function App() {
             onSaved={() => handleSaved("setups")}
           />
         );
+      case "places":
+        return <PlacesView snapshot={snapshot} onEditPlace={openPlaceEditor} onUsePlace={usePlace} />;
+      case "place-edit":
+        return (
+          <PlaceEditView
+            placeId={editingPlaceId}
+            snapshot={snapshot}
+            onBack={() => setRoute("places")}
+            onSaved={() => handleSaved("places")}
+          />
+        );
+      case "stats":
+        return <StatsView snapshot={snapshot} onUseItem={useItemFromStats} onUsePlace={usePlace} onUseSetup={useSetup} />;
       default:
         return <PlaceholderView route={route} />;
     }

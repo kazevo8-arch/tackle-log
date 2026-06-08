@@ -76,22 +76,19 @@ export function ResultAddView({ snapshot, onRouteChange, onSaved }: ResultAddVie
       setError("魚種を選んでください。");
       return;
     }
-    if (!fishPhoto) {
-      setError("魚写真を選んでください。");
-      return;
-    }
-
     setSaving(true);
     try {
       const createdAt = nowIso();
-      const media = await createMediaFromImage(fishPhoto);
+      const media = fishPhoto ? await createMediaFromImage(fishPhoto) : undefined;
       const sessionId = activeSession?.id ?? uid("session");
       const sessionTitle = `${currentPlace.riverName} ${currentPlace.areaName}`;
       const resultId = uid("result");
       const usedItemIds = currentSetup.items.map((item) => item.itemId);
 
       await db.transaction("rw", [db.media, db.sessions, db.results, db.places, db.appState], async () => {
-        await db.media.put(media);
+        if (media) {
+          await db.media.put(media);
+        }
         if (!activeSession) {
           await db.sessions.put({
             id: sessionId,
@@ -119,7 +116,7 @@ export function ResultAddView({ snapshot, onRouteChange, onSaved }: ResultAddVie
           usedItemIds,
           species: species.trim(),
           sizeCm,
-          fishMediaId: media.id,
+          fishMediaId: media?.id,
           sceneryMediaIds: [],
           note: "",
           caughtAt: createdAt,
@@ -218,8 +215,8 @@ export function ResultAddView({ snapshot, onRouteChange, onSaved }: ResultAddVie
       </section>
 
       <section className="panel">
-        <h2>魚写真</h2>
-        {previewUrl ? <img className="photo-preview" alt="選択中の魚写真" src={previewUrl} /> : <div className="large-photo-placeholder">魚写真を選択</div>}
+        <h2>魚写真（あとで追加可）</h2>
+        {previewUrl ? <img className="photo-preview" alt="選択中の魚写真" src={previewUrl} /> : <div className="large-photo-placeholder">魚写真はあとで追加できます</div>}
         <label className="button button-secondary file-button">
           写真を選ぶ
           <input accept="image/*" type="file" onChange={(event) => selectPhoto(event.target.files?.[0])} />

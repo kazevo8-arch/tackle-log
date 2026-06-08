@@ -1,6 +1,5 @@
 import type { AppSnapshot } from "../App";
-import { EmptyState, PhotoCard, ScreenHeader } from "../components";
-import { setupItems } from "../domain";
+import { EmptyState, PhotoCard, ScreenHeader, SetupSummary } from "../components";
 
 type SetupsViewProps = {
   snapshot: AppSnapshot;
@@ -17,17 +16,18 @@ export function SetupsView({ snapshot, onEditSetup, onUseSetup }: SetupsViewProp
       </button>
       {snapshot.setups.length ? (
         snapshot.setups.map((setup) => {
-          const gear = setupItems(setup, snapshot.items).slice(0, 4);
-          const resultCount = snapshot.results.filter((result) => result.setupId === setup.id).length;
-          const maxSize = Math.max(0, ...snapshot.results.filter((result) => result.setupId === setup.id).map((result) => result.sizeCm));
+          const setupResults = snapshot.results.filter((result) => result.setupId === setup.id);
+          const resultCount = setupResults.length;
+          const maxSize = Math.max(0, ...setupResults.map((result) => result.sizeCm));
           return (
             <PhotoCard
               key={setup.id}
               title={setup.name}
               photoLabel="セット"
               badge={setup.id === snapshot.appState?.currentSetupId ? "今日のセット" : undefined}
-              lines={[`釣果 ${resultCount}匹 / 最大 ${maxSize || "-"}cm`, gear.map((item) => item.name).join(" / ") || "装備なし"]}
+              lines={[`釣果 ${resultCount}匹 / 最大 ${maxSize || "-"}cm`]}
             >
+              <SetupSummary items={snapshot.items} setup={setup} />
               <div className="action-row">
                 <button className="button button-primary button-compact" type="button" onClick={() => onUseSetup(setup.id)}>
                   使う

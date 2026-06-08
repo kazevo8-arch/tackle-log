@@ -1,11 +1,14 @@
+import { useEffect } from "react";
 import type { AppRoute } from "../routes";
 import type { AppSnapshot } from "../App";
-import { PhotoCard, ScreenHeader } from "../components";
+import { FlashNotice, PhotoCard, ScreenHeader, SetupSummary } from "../components";
 
 type HomeViewProps = {
-  snapshot: AppSnapshot;
+  homeNotice?: string;
   onRouteChange: (route: AppRoute) => void;
   onStartSession: () => void;
+  scrollToken: number;
+  snapshot: AppSnapshot;
 };
 
 function formatDateTime(value?: string) {
@@ -18,7 +21,7 @@ function formatDateTime(value?: string) {
   }).format(new Date(value));
 }
 
-export function HomeView({ snapshot, onRouteChange, onStartSession }: HomeViewProps) {
+export function HomeView({ homeNotice, onRouteChange, onStartSession, scrollToken, snapshot }: HomeViewProps) {
   const appState = snapshot.appState;
   const activeSession = snapshot.sessions.find((session) => session.id === appState?.activeSessionId);
   const currentSetup = snapshot.setups.find((setup) => setup.id === appState?.currentSetupId);
@@ -29,9 +32,14 @@ export function HomeView({ snapshot, onRouteChange, onStartSession }: HomeViewPr
   const previousPlace = snapshot.places.find((place) => place.id === previousResult?.placeId);
   const previousPrimaryItem = snapshot.items.find((item) => item.id === previousResult?.primaryItemId);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [scrollToken]);
+
   return (
     <main className="screen-content">
       <ScreenHeader title="ホーム" description="セット・ルアー・ポイントを選び、釣れた構成を再利用します。" />
+      <FlashNotice message={homeNotice} />
 
       <section className="panel active-panel">
         <p className="eyebrow">釣行中</p>
@@ -67,6 +75,46 @@ export function HomeView({ snapshot, onRouteChange, onStartSession }: HomeViewPr
         )}
       </section>
 
+      <PhotoCard
+        title={currentSetup?.name ?? "今日のセット未選択"}
+        photoLabel="セット"
+        hint="タップして変更"
+        lines={[currentSetup ? "構成を確認して次回も再利用できます" : "セットを選ぶと釣果に自動反映されます"]}
+        onClick={() => onRouteChange("set-select")}
+      >
+        <SetupSummary items={snapshot.items} setup={currentSetup} />
+      </PhotoCard>
+
+      <PhotoCard
+        title={currentPrimaryItem?.name ?? "現在使用中 未選択"}
+        photoLabel="使用中"
+        hint="タップして変更"
+        lines={[
+          currentPrimaryItem ? `${currentPrimaryItem.note || "実績メモなし"}` : "ルアー / フライ / 毛鉤 / 餌から選択",
+        ]}
+        onClick={() => onRouteChange("set-select")}
+      />
+
+      <PhotoCard
+        badge={currentPlace?.isFavorite ? "★ お気に入り" : undefined}
+        title={currentPlace?.pointName ?? "現在ポイント未選択"}
+        photoLabel="ポイント"
+        hint="タップして変更"
+        lines={
+          currentPlace
+            ? [`${currentPlace.riverName} / ${currentPlace.areaName}`, currentPlace.note || "ポイントメモなし"]
+            : ["ポイントを選ぶと場所実績に反映されます"]
+        }
+        onClick={() => onRouteChange("places")}
+      />
+
+      <button className="button button-primary" type="button" onClick={() => onRouteChange("result-add")}>
+        釣果を追加
+      </button>
+      <button className="button button-secondary" type="button" onClick={() => onRouteChange("stats")}>
+        実績を見る
+      </button>
+
       {previousResult ? (
         <PhotoCard
           badge="前回釣行"
@@ -78,45 +126,6 @@ export function HomeView({ snapshot, onRouteChange, onStartSession }: HomeViewPr
           ]}
         />
       ) : null}
-
-      <PhotoCard
-        title={currentSetup?.name ?? "今日のセット未選択"}
-        photoLabel="セット"
-        lines={currentSetup ? ["Silver Creek 51UL", "カルコンBFS / PE0.6"] : ["セットを選ぶと釣果に自動反映されます"]}
-      />
-      <button className="button button-secondary" type="button" onClick={() => onRouteChange("set-select")}>
-        セットを変更
-      </button>
-
-      <PhotoCard
-        title={currentPrimaryItem?.name ?? "現在使用中 未選択"}
-        photoLabel="ルアー"
-        lines={["セット内のルアー/フライ/毛鉤/餌から選択"]}
-      />
-      <button className="button button-primary" type="button" onClick={() => onRouteChange("set-select")}>
-        ルアー/フライを変更
-      </button>
-
-      <PhotoCard
-        badge={currentPlace?.isFavorite ? "★ お気に入り" : undefined}
-        title={currentPlace?.pointName ?? "現在ポイント未選択"}
-        photoLabel="ポイント"
-        lines={
-          currentPlace
-            ? [`${currentPlace.riverName} / ${currentPlace.areaName}`, "おすすめ D-Compact38"]
-            : ["ポイントを選ぶと場所実績に反映されます"]
-        }
-      />
-      <button className="button button-secondary" type="button" onClick={() => onRouteChange("places")}>
-        {currentPlace ? "ポイントを変更" : "ポイントを選択"}
-      </button>
-
-      <button className="button button-primary" type="button" onClick={() => onRouteChange("result-add")}>
-        釣果を追加
-      </button>
-      <button className="button button-secondary" type="button" onClick={() => onRouteChange("stats")}>
-        実績を見る
-      </button>
     </main>
   );
 }

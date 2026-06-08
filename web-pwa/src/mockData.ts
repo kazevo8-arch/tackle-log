@@ -26,13 +26,13 @@ const categories: ItemCategory[] = [
 }));
 
 const items: Item[] = [
-  { id: "item_rod_silver_creek", categoryId: "cat_rod", kind: "rod", name: "Silver Creek 51UL", note: "", createdAt: now, updatedAt: now },
-  { id: "item_reel_calcon_bfs", categoryId: "cat_reel", kind: "reel", name: "カルコンBFS", note: "", createdAt: now, updatedAt: now },
-  { id: "item_line_pe06", categoryId: "cat_line", kind: "line", name: "PE0.6号", note: "", createdAt: now, updatedAt: now },
-  { id: "item_leader_nylon6", categoryId: "cat_leader", kind: "leader", name: "ナイロン6lb", note: "", createdAt: now, updatedAt: now },
-  { id: "item_lure_dcompact38", categoryId: "cat_lure", kind: "lure", name: "D-Compact 38", note: "デイリー裏で実績", createdAt: now, updatedAt: now },
-  { id: "item_lure_emishi50s", categoryId: "cat_lure", kind: "lure", name: "蝦夷50S", note: "堰堤下で使う", createdAt: now, updatedAt: now },
-  { id: "item_fly_elk", categoryId: "cat_fly", kind: "fly", name: "エルクヘアカディス", note: "", createdAt: now, updatedAt: now },
+  { id: "item_rod_silver_creek", categoryId: "cat_rod", kind: "rod", name: "Silver Creek 51UL", note: "", fishingStyles: ["mountain_stream_bait", "spinning"], tags: ["渓流"], createdAt: now, updatedAt: now },
+  { id: "item_reel_calcon_bfs", categoryId: "cat_reel", kind: "reel", name: "カルコンBFS", note: "", fishingStyles: ["mountain_stream_bait"], tags: ["BFS"], createdAt: now, updatedAt: now },
+  { id: "item_line_pe06", categoryId: "cat_line", kind: "line", name: "PE0.6号", note: "", fishingStyles: ["mountain_stream_bait", "spinning"], tags: ["PE"], createdAt: now, updatedAt: now },
+  { id: "item_leader_nylon6", categoryId: "cat_leader", kind: "leader", name: "ナイロン6lb", note: "", fishingStyles: ["mountain_stream_bait", "spinning"], tags: ["ナイロン"], createdAt: now, updatedAt: now },
+  { id: "item_lure_dcompact38", categoryId: "cat_lure", kind: "lure", name: "D-Compact 38", note: "デイリー裏で実績", fishingStyles: ["mountain_stream_bait", "spinning"], tags: ["ミノー", "渓流"], createdAt: now, updatedAt: now },
+  { id: "item_lure_emishi50s", categoryId: "cat_lure", kind: "lure", name: "蝦夷50S", note: "堰堤下で使う", fishingStyles: ["mountain_stream_bait", "spinning"], tags: ["ヘビーシンキング"], createdAt: now, updatedAt: now },
+  { id: "item_fly_elk", categoryId: "cat_fly", kind: "fly", name: "エルクヘアカディス", note: "", fishingStyles: ["fly"], tags: ["ドライ"], createdAt: now, updatedAt: now },
 ];
 
 const places: Place[] = [
@@ -64,7 +64,7 @@ const setups: Setup[] = [
   {
     id: "setup_stream_bait",
     name: "渓流ベイト",
-    fishingMethods: ["bait"],
+    fishingStyle: "mountain_stream_bait",
     items: [
       { itemId: "item_rod_silver_creek", role: "rod" },
       { itemId: "item_reel_calcon_bfs", role: "reel" },
@@ -80,7 +80,7 @@ const setups: Setup[] = [
   {
     id: "setup_fly_three",
     name: "フライ #3",
-    fishingMethods: ["fly_fishing"],
+    fishingStyle: "fly",
     items: [
       { itemId: "item_fly_elk", role: "primary" },
     ],

@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { db } from "../db";
-import { nowIso, primaryItemKinds, setupItems, uid } from "../domain";
+import { fishingStyleLabel, fishingStyleOptions, itemKindLabel, nowIso, preferredKindsForStyle, primaryItemKinds, setupItems, uid } from "../domain";
 import type { AppSnapshot } from "../App";
-import type { FishingMethod, ItemKind, SetupItem } from "../models";
-import { EmptyState, PhotoCard, ScreenHeader } from "../components";
+import type { FishingStyle, ItemKind, SetupItem } from "../models";
+import { EmptyState, PhotoCard, ScreenHeader, SetupSummary } from "../components";
 
 type SetupEditViewProps = {
   setupId?: string;
@@ -11,14 +11,6 @@ type SetupEditViewProps = {
   onBack: () => void;
   onSaved: () => void;
 };
-
-const methods: { id: FishingMethod; label: string }[] = [
-  { id: "spinning", label: "スピニング" },
-  { id: "bait", label: "ベイト" },
-  { id: "fly_fishing", label: "フライ" },
-  { id: "tenkara", label: "テンカラ" },
-  { id: "bait_fishing", label: "餌釣り" },
-];
 
 function defaultRole(kind: ItemKind): SetupItem["role"] {
   if (kind === "rod" || kind === "reel" || kind === "line" || kind === "leader") return kind;
@@ -29,7 +21,7 @@ function defaultRole(kind: ItemKind): SetupItem["role"] {
 export function SetupEditView({ setupId, snapshot, onBack, onSaved }: SetupEditViewProps) {
   const existing = snapshot.setups.find((setup) => setup.id === setupId);
   const [name, setName] = useState(existing?.name ?? "");
-  const [fishingMethod, setFishingMethod] = useState<FishingMethod>(existing?.fishingMethods[0] ?? "bait");
+  const [fishingStyle, setFishingStyle] = useState<FishingStyle>(existing?.fishingStyle ?? "mountain_stream_bait");
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>(existing?.items.map((item) => item.itemId) ?? []);
   const [defaultPrimaryItemId, setDefaultPrimaryItemId] = useState(existing?.defaultPrimaryItemId ?? "");
 
@@ -39,11 +31,32 @@ export function SetupEditView({ setupId, snapshot, onBack, onSaved }: SetupEditV
   );
   const currentItems = setupItems(existing, snapshot.items);
   const primaryItems = selectedItems.filter((item) => primaryItemKinds.includes(item.kind));
+  const preferredKinds = preferredKindsForStyle(fishingStyle);
+
+  const groupedItems = snapshot.itemCategories
+    .sort((a, b) => {
+      const aPreferred = preferredKinds.includes(a.kind);
+      const bPreferred = preferredKinds.includes(b.kind);
+      if (aPreferred !== bPreferred) return aPreferred ? -1 : 1;
+      return a.sortOrder - b.sortOrder;
+    })
+    .map((category) => ({
+      category,
+      items: snapshot.items.filter((item) => item.kind === category.kind).sort((a, b) => a.name.localeCompare(b.name, "ja-JP")),
+    }));
+  const draftSetup = {
+    id: existing?.id ?? "draft",
+    name: name || "新しいセット",
+    fishingStyle,
+    items: selectedItems.map((item) => ({ itemId: item.id, role: defaultRole(item.kind) })),
+    defaultPrimaryItemId: defaultPrimaryItemId || primaryItems[0]?.id,
+    mediaId: existing?.mediaId,
+    createdAt: existing?.createdAt ?? nowIso(),
+    updatedAt: nowIso(),
+  };
 
   function toggleItem(itemId: string) {
-    setSelectedItemIds((current) =>
-      current.includes(itemId) ? current.filter((id) => id !== itemId) : [...current, itemId],
-    );
+    setSelectedItemIds((current) => (current.includes(itemId) ? current.filter((id) => id !== itemId) : [...current, itemId]));
   }
 
   async function save() {
@@ -52,7 +65,7 @@ export function SetupEditView({ setupId, snapshot, onBack, onSaved }: SetupEditV
     await db.setups.put({
       id: existing?.id ?? uid("setup"),
       name: name.trim(),
-      fishingMethods: [fishingMethod],
+      fishingStyle,
       items: selectedItems.map((item) => ({ itemId: item.id, role: defaultRole(item.kind) })),
       defaultPrimaryItemId: defaultPrimaryItemId || primaryItems[0]?.id,
       mediaId: existing?.mediaId,
@@ -72,8 +85,10 @@ export function SetupEditView({ setupId, snapshot, onBack, onSaved }: SetupEditV
       <PhotoCard
         title={name || "新しいセット"}
         photoLabel="セット"
-        lines={[selectedItems.map((item) => item.name).join(" / ") || currentItems.map((item) => item.name).join(" / ") || "装備未選択"]}
-      />
+        lines={[fishingStyleLabel(fishingStyle), selectedItems.length ? `${selectedItems.length}件の装備を登録中` : "装備未選択"]}
+      >
+        <SetupSummary items={snapshot.items} setup={selectedItemIds.length ? draftSetup : existing} />
+      </PhotoCard>
 
       <section className="panel form-grid">
         <label>
@@ -82,10 +97,10 @@ export function SetupEditView({ setupId, snapshot, onBack, onSaved }: SetupEditV
         </label>
         <label>
           <span>釣法</span>
-          <select value={fishingMethod} onChange={(event) => setFishingMethod(event.target.value as FishingMethod)}>
-            {methods.map((method) => (
-              <option key={method.id} value={method.id}>
-                {method.label}
+          <select value={fishingStyle} onChange={(event) => setFishingStyle(event.target.value as FishingStyle)}>
+            {fishingStyleOptions.map((style) => (
+              <option key={style.id} value={style.id}>
+                {style.label}
               </option>
             ))}
           </select>
@@ -94,14 +109,26 @@ export function SetupEditView({ setupId, snapshot, onBack, onSaved }: SetupEditV
 
       <section className="panel">
         <h2>セットへ装備を追加</h2>
-        <div className="check-list">
-          {snapshot.items.map((item) => (
-            <label key={item.id} className="check-row">
-              <input checked={selectedItemIds.includes(item.id)} type="checkbox" onChange={() => toggleItem(item.id)} />
-              <span>{item.name}</span>
-            </label>
-          ))}
-        </div>
+        {groupedItems.map(({ category, items }) => (
+          <details key={category.id} className="fold-panel" open={preferredKinds.includes(category.kind)}>
+            <summary>
+              <span>{category.label}</span>
+              <small>{preferredKinds.includes(category.kind) ? "優先表示" : "その他候補"}</small>
+            </summary>
+            <div className="check-list">
+              {items.length ? (
+                items.map((item) => (
+                  <label key={item.id} className="check-row">
+                    <input checked={selectedItemIds.includes(item.id)} type="checkbox" onChange={() => toggleItem(item.id)} />
+                    <span>{item.name}</span>
+                  </label>
+                ))
+              ) : (
+                <EmptyState>{`${itemKindLabel(category.kind)}はまだありません。`}</EmptyState>
+              )}
+            </div>
+          </details>
+        ))}
       </section>
 
       <section className="panel">
@@ -116,7 +143,7 @@ export function SetupEditView({ setupId, snapshot, onBack, onSaved }: SetupEditV
             ))}
           </select>
         ) : (
-          <EmptyState>ルアー/フライ/毛鉤/餌をセットへ追加してください。</EmptyState>
+          <EmptyState>ルアー / フライ / 毛鉤 / 餌をセットへ追加してください。</EmptyState>
         )}
       </section>
 

@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { AppRoute } from "../routes";
 import type { AppSnapshot } from "../App";
-import { FlashNotice, PhotoCard, PhotoModal, PhotoPreviewButton, ScreenHeader, SetupSummary } from "../components";
+import { FlashNotice, PhotoModal, PhotoPreviewButton } from "../components";
 import { deletedItemLabel, deletedSetupLabel, resultItemName, resultPointLabel, resultRiverName, resultSetupName } from "../domain";
+import type { Media, Result } from "../models";
 
 type HomeViewProps = {
   homeNotice?: string;
@@ -23,150 +24,209 @@ function formatDateTime(value?: string) {
   }).format(new Date(value));
 }
 
+function formatTime(value: string) {
+  return new Intl.DateTimeFormat("ja-JP", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function daysSince(value?: string) {
+  if (!value) return "未記録";
+  const diffMs = Date.now() - new Date(value).getTime();
+  const days = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+  if (days === 0) return "今日";
+  if (days === 1) return "1日前";
+  return `${days}日前`;
+}
+
+function isSameLocalDay(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+function ResultRow({
+  media,
+  onOpenPhoto,
+  onToggleFavorite,
+  result,
+}: {
+  media?: Media;
+  onOpenPhoto: () => void;
+  onToggleFavorite: () => void;
+  result: Result;
+}) {
+  return (
+    <article className="home-catch-row">
+      <PhotoPreviewButton
+        alt={`${result.species} の釣果写真`}
+        className="home-catch-thumb"
+        media={media}
+        onOpen={media ? onOpenPhoto : undefined}
+        placeholder="写真なし"
+      />
+      <div className="home-catch-main">
+        <strong>{result.species}</strong>
+        <span>{result.sizeCm} cm</span>
+      </div>
+      <div className="home-catch-meta">
+        <span>{formatTime(result.caughtAt)}</span>
+        <button className="favorite-toggle" type="button" onClick={onToggleFavorite}>
+          {result.isFavorite ? "★" : "☆"}
+        </button>
+      </div>
+    </article>
+  );
+}
+
 export function HomeView({ homeNotice, onRouteChange, onStartSession, onToggleFavorite, scrollToken, snapshot }: HomeViewProps) {
   const appState = snapshot.appState;
   const activeSession = snapshot.sessions.find((session) => session.id === appState?.activeSessionId);
   const currentSetup = snapshot.setups.find((setup) => setup.id === appState?.currentSetupId);
   const currentPlace = snapshot.places.find((place) => place.id === appState?.currentPlaceId);
   const currentPrimaryItem = snapshot.items.find((item) => item.id === appState?.currentPrimaryItemId);
-  const latestResult = [...snapshot.results].sort((a, b) => b.caughtAt.localeCompare(a.caughtAt))[0];
+  const sortedResults = useMemo(() => [...snapshot.results].sort((a, b) => b.caughtAt.localeCompare(a.caughtAt)), [snapshot.results]);
+  const latestResult = sortedResults[0];
   const latestMedia = snapshot.media.find((media) => media.id === latestResult?.fishMediaId);
-  const [previewOpen, setPreviewOpen] = useState(false);
+  const todayResults = useMemo(() => {
+    const now = new Date();
+    const sameDay = sortedResults.filter((result) => isSameLocalDay(new Date(result.caughtAt), now));
+    return sameDay.slice(0, 3);
+  }, [sortedResults]);
+  const totalCatches = snapshot.results.length;
+  const averageSize = totalCatches ? snapshot.results.reduce((sum, result) => sum + result.sizeCm, 0) / totalCatches : 0;
+  const maxSize = totalCatches ? Math.max(...snapshot.results.map((result) => result.sizeCm)) : 0;
+  const [previewMedia, setPreviewMedia] = useState<Media | undefined>();
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [scrollToken]);
 
   return (
-    <main className="screen-content">
-      <ScreenHeader title="ホーム" description="セット・ルアー・ポイントを選び、釣れた流れをそのまま次回に再利用します。" />
+    <main className="screen-content home-screen">
+      <header className="home-topbar">
+        <button className="topbar-icon-button" type="button" aria-label="メニュー">
+          <span className="icon-bars" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
+        </button>
+        <h1>Fishing Log</h1>
+        <button className="topbar-icon-button" type="button" aria-label="設定">
+          <span className="icon-bell" aria-hidden="true" />
+        </button>
+      </header>
+
       <FlashNotice message={homeNotice} />
 
-      <section className="panel active-panel">
-        <p className="eyebrow">釣行中</p>
-        {activeSession ? (
-          <>
-            <h2>{activeSession.title}</h2>
-            <dl className="metric-list">
-              <div>
-                <dt>開始</dt>
-                <dd>{formatDateTime(activeSession.startedAt)}</dd>
-              </div>
-              <div>
-                <dt>セット</dt>
-                <dd>{currentSetup?.name ?? deletedSetupLabel()}</dd>
-              </div>
-              <div>
-                <dt>使用中</dt>
-                <dd>{currentPrimaryItem?.name ?? deletedItemLabel()}</dd>
-              </div>
-              <div>
-                <dt>ポイント</dt>
-                <dd>{currentPlace?.pointName ?? "未選択"}</dd>
-              </div>
-            </dl>
-          </>
-        ) : (
-          <>
-            <h2>釣行はまだ開始していません</h2>
-            <button className="button button-secondary" type="button" onClick={onStartSession}>
-              このセットで釣行開始
+      <section className="home-hero">
+        <div className="home-hero-backdrop" />
+        <div className="home-hero-content">
+          <div className="home-hero-row">
+            <span className="hero-badge">{activeSession ? "現在の釣行" : "釣行準備"}</span>
+            <button className="hero-map-button" type="button" onClick={() => onRouteChange("places")}>
+              地図
             </button>
-          </>
+          </div>
+          <h2>{currentPlace?.riverName ?? "河川を選択"}</h2>
+          <p>{currentPlace?.pointName ?? "ポイントを選択"}</p>
+          <div className="home-hero-footer">
+            <span>{currentPlace ? `${currentPlace.areaName} / ${currentPlace.pointName}` : "現在ポイント未選択"}</span>
+            {activeSession ? (
+              <span className="hero-subtle">開始 {formatDateTime(activeSession.startedAt)}</span>
+            ) : (
+              <button className="hero-session-button" type="button" onClick={onStartSession}>
+                釣行開始
+              </button>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="home-floating-card">
+        <button className="home-context-button" type="button" onClick={() => onRouteChange("set-select")}>
+          <span className="home-context-label">セット</span>
+          <strong>{currentSetup?.name ?? deletedSetupLabel()}</strong>
+        </button>
+        <div className="home-context-divider" />
+        <button className="home-context-button" type="button" onClick={() => onRouteChange("set-select")}>
+          <span className="home-context-label">現在使用中</span>
+          <strong>{currentPrimaryItem?.name ?? deletedItemLabel()}</strong>
+        </button>
+      </section>
+
+      <div className="home-action-row">
+        <button className="home-main-action" type="button" onClick={() => onRouteChange("result-add")}>
+          <span>釣果を追加</span>
+          <span className="home-action-plus">+</span>
+        </button>
+        <button className="home-sub-action" type="button" onClick={() => onRouteChange("places")}>
+          ポイントを変更
+        </button>
+      </div>
+
+      <section className="home-section-card">
+        <div className="home-section-header">
+          <h2>本日の釣果</h2>
+          <button className="section-link-button" type="button" onClick={() => onRouteChange("results")}>
+            すべて見る
+          </button>
+        </div>
+        {todayResults.length ? (
+          <div className="home-catch-list">
+            {todayResults.map((result) => {
+              const media = snapshot.media.find((item) => item.id === result.fishMediaId);
+              return (
+                <ResultRow
+                  key={result.id}
+                  media={media}
+                  onOpenPhoto={() => setPreviewMedia(media)}
+                  onToggleFavorite={() => onToggleFavorite(result.id)}
+                  result={result}
+                />
+              );
+            })}
+          </div>
+        ) : (
+          <div className="home-empty">今日はまだ釣果がありません。</div>
         )}
       </section>
 
-      <PhotoCard
-        title={currentSetup?.name ?? "今日のセット未選択"}
-        photoLabel="セット"
-        hint="タップして変更"
-        lines={[currentSetup ? "実績を見ながら次も使うセットを決めます。" : "セットを選ぶと釣果に自動で紐づきます。"]}
-        onClick={() => onRouteChange("set-select")}
-      >
-        <SetupSummary items={snapshot.items} setup={currentSetup} />
-      </PhotoCard>
-
-      <PhotoCard
-        title={currentPrimaryItem?.name ?? "現在使用中 未選択"}
-        photoLabel="使用中"
-        hint="タップして変更"
-        lines={[currentPrimaryItem ? currentPrimaryItem.note || "いま投げている主力を記録します。" : "ルアー / フライ / 毛鉤 / 餌を選べます。"]}
-        onClick={() => onRouteChange("set-select")}
-      />
-
-      <PhotoCard
-        title={currentPlace?.riverName ?? "現在河川 未選択"}
-        photoLabel="河川"
-        hint="タップして変更"
-        lines={[currentPlace ? `${currentPlace.areaName} / ${currentPlace.pointName}` : "河川から選ぶと、ポイント選択が分かりやすくなります。"]}
-        onClick={() => onRouteChange("rivers")}
-      />
-
-      <PhotoCard
-        badge={currentPlace?.isFavorite ? "★ お気に入り" : undefined}
-        title={currentPlace ? `${currentPlace.areaName} / ${currentPlace.pointName}` : "現在ポイント 未選択"}
-        photoLabel="ポイント"
-        hint="タップして変更"
-        lines={[currentPlace ? currentPlace.note || "ポイントメモなし" : "ポイントを選ぶと釣果に自動で紐づきます。"]}
-        onClick={() => onRouteChange("places")}
-      />
-
-      <button className="button button-primary" type="button" onClick={() => onRouteChange("result-add")}>
-        釣果を追加
-      </button>
-      <button className="button button-secondary" type="button" onClick={() => onRouteChange("stats")}>
-        実績を見る
-      </button>
-
-      {latestResult ? (
-        <article className="result-card">
-          <PhotoPreviewButton
-            alt="最新釣果の写真"
-            className="result-thumb"
-            media={latestMedia}
-            onOpen={latestMedia ? () => setPreviewOpen(true) : undefined}
-            placeholder="魚写真なし"
-          />
-          <div className="result-body">
-            <div className="result-heading">
-              <h2>
-                {latestResult.species} {latestResult.sizeCm}cm
-              </h2>
-              <div className="result-flags">
-                {latestResult.isFavorite ? <span className="badge">★ お気に入り</span> : null}
-                {latestResult.isMemorial ? <span className="badge badge-outline">記念</span> : null}
-              </div>
-            </div>
-            <p>{resultRiverName(latestResult, snapshot.places)}</p>
-            <p>{resultPointLabel(latestResult, snapshot.places)}</p>
-            <p>{resultSetupName(latestResult, snapshot.setups)}</p>
-            <p>{resultItemName(latestResult, snapshot.items)}</p>
-            <div className="inline-actions">
-              <button className={latestResult.isFavorite ? "chip chip-active" : "chip"} type="button" onClick={() => onToggleFavorite(latestResult.id)}>
-                {latestResult.isFavorite ? "★ お気に入り中" : "☆ お気に入り"}
-              </button>
-              {latestMedia ? (
-                <button className="chip" type="button" onClick={() => setPreviewOpen(true)}>
-                  写真を開く
-                </button>
-              ) : (
-                <span className="result-photo-note">写真なし</span>
-              )}
-            </div>
+      <section className="home-section-card">
+        <div className="home-section-header">
+          <h2>クイック実績</h2>
+        </div>
+        <div className="home-quick-stats">
+          <div className="home-quick-stat">
+            <span>釣果数</span>
+            <strong>{totalCatches}匹</strong>
           </div>
-        </article>
-      ) : null}
+          <div className="home-quick-stat">
+            <span>平均サイズ</span>
+            <strong>{totalCatches ? averageSize.toFixed(1) : "-"} cm</strong>
+          </div>
+          <div className="home-quick-stat">
+            <span>最大サイズ</span>
+            <strong>{maxSize || "-"} cm</strong>
+          </div>
+          <div className="home-quick-stat">
+            <span>最終釣行</span>
+            <strong>{daysSince(latestResult?.caughtAt)}</strong>
+          </div>
+        </div>
+      </section>
 
       {latestResult ? (
-        <section className="panel">
+        <section className="home-latest-summary">
           <p className="eyebrow">前回釣行</p>
-          <h2>{resultSetupName(latestResult, snapshot.setups)}</h2>
-          <p>{formatDateTime(latestResult.caughtAt)}</p>
-          <p>{`${resultRiverName(latestResult, snapshot.places)} / ${resultPointLabel(latestResult, snapshot.places)}`}</p>
+          <h3>{resultSetupName(latestResult, snapshot.setups)}</h3>
+          <p>{resultRiverName(latestResult, snapshot.places)}</p>
+          <p>{resultPointLabel(latestResult, snapshot.places)}</p>
+          <p>{resultItemName(latestResult, snapshot.items)}</p>
         </section>
       ) : null}
 
-      {previewOpen ? <PhotoModal alt="最新釣果の拡大写真" media={latestMedia} onClose={() => setPreviewOpen(false)} title="最新釣果の写真" /> : null}
+      {previewMedia ? <PhotoModal alt="釣果写真の拡大表示" media={previewMedia} onClose={() => setPreviewMedia(undefined)} title="釣果写真" /> : null}
     </main>
   );
 }

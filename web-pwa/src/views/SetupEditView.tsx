@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { db } from "../db";
 import {
   fishingStyleLabel,
@@ -7,7 +7,6 @@ import {
   nowIso,
   preferredKindsForStyle,
   primaryItemKinds,
-  setupItems,
   uid,
 } from "../domain";
 import type { AppSnapshot } from "../App";
@@ -15,6 +14,7 @@ import type { FishingStyle, ItemKind, SetupItem } from "../models";
 import { EmptyState, PhotoCard, ScreenHeader, SetupSummary } from "../components";
 
 type SetupEditViewProps = {
+  focusSection?: "top" | "current-item";
   setupId?: string;
   snapshot: AppSnapshot;
   onBack: () => void;
@@ -27,12 +27,14 @@ function defaultRole(kind: ItemKind): SetupItem["role"] {
   return "shared";
 }
 
-export function SetupEditView({ setupId, snapshot, onBack, onSaved }: SetupEditViewProps) {
+export function SetupEditView({ focusSection = "top", setupId, snapshot, onBack, onSaved }: SetupEditViewProps) {
   const existing = snapshot.setups.find((setup) => setup.id === setupId);
   const [name, setName] = useState(existing?.name ?? "");
   const [fishingStyle, setFishingStyle] = useState<FishingStyle>(existing?.fishingStyle ?? "mountain_stream_bait");
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>(existing?.items.map((item) => item.itemId) ?? []);
   const [defaultPrimaryItemId, setDefaultPrimaryItemId] = useState(existing?.defaultPrimaryItemId ?? "");
+  const [highlightCurrentItem, setHighlightCurrentItem] = useState(false);
+  const currentItemSectionRef = useRef<HTMLElement | null>(null);
 
   const selectedItems = useMemo(
     () => snapshot.items.filter((item) => selectedItemIds.includes(item.id)),
@@ -40,6 +42,17 @@ export function SetupEditView({ setupId, snapshot, onBack, onSaved }: SetupEditV
   );
   const primaryItems = selectedItems.filter((item) => primaryItemKinds.includes(item.kind));
   const preferredKinds = preferredKindsForStyle(fishingStyle);
+
+  useEffect(() => {
+    if (focusSection !== "current-item") return;
+    const node = currentItemSectionRef.current;
+    if (!node) return;
+    window.setTimeout(() => {
+      node.scrollIntoView({ behavior: "smooth", block: "start" });
+      setHighlightCurrentItem(true);
+      window.setTimeout(() => setHighlightCurrentItem(false), 1800);
+    }, 80);
+  }, [focusSection]);
 
   const groupedItems = snapshot.itemCategories
     .sort((a, b) => {
@@ -161,8 +174,11 @@ export function SetupEditView({ setupId, snapshot, onBack, onSaved }: SetupEditV
         ))}
       </section>
 
-      <section className="panel">
-        <h2>現在使用中の初期候補</h2>
+      <section
+        ref={currentItemSectionRef}
+        className={highlightCurrentItem ? "panel panel-focus-ring" : "panel"}
+      >
+        <h2>現在使用中を選ぶ</h2>
         {primaryItems.length ? (
           <select value={defaultPrimaryItemId} onChange={(event) => setDefaultPrimaryItemId(event.target.value)}>
             <option value="">自動で選ぶ</option>

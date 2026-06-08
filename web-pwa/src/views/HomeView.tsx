@@ -7,6 +7,7 @@ import type { Media, Result } from "../models";
 
 type HomeViewProps = {
   homeNotice?: string;
+  onEditCurrentItem: () => void;
   onRouteChange: (route: AppRoute) => void;
   onStartSession: () => void;
   onToggleFavorite: (resultId: string) => void;
@@ -44,6 +45,11 @@ function isSameLocalDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
+function compactItemName(name: string) {
+  if (name.length <= 16) return name;
+  return `${name.slice(0, 15)}…`;
+}
+
 function CatchListRow({
   media,
   onOpenPhoto,
@@ -62,7 +68,7 @@ function CatchListRow({
         className="home-catch-thumb"
         media={media}
         onOpen={media ? onOpenPhoto : undefined}
-        placeholder="魚写真なし"
+        placeholder="写真なし"
       />
       <div className="home-catch-main">
         <strong>{result.species}</strong>
@@ -78,7 +84,15 @@ function CatchListRow({
   );
 }
 
-export function HomeView({ homeNotice, onRouteChange, onStartSession, onToggleFavorite, scrollToken, snapshot }: HomeViewProps) {
+export function HomeView({
+  homeNotice,
+  onEditCurrentItem,
+  onRouteChange,
+  onStartSession,
+  onToggleFavorite,
+  scrollToken,
+  snapshot,
+}: HomeViewProps) {
   const appState = snapshot.appState;
   const activeSession = snapshot.sessions.find((session) => session.id === appState?.activeSessionId);
   const currentSetup = snapshot.setups.find((setup) => setup.id === appState?.currentSetupId);
@@ -86,7 +100,6 @@ export function HomeView({ homeNotice, onRouteChange, onStartSession, onToggleFa
   const currentPrimaryItem = snapshot.items.find((item) => item.id === appState?.currentPrimaryItemId);
   const sortedResults = useMemo(() => [...snapshot.results].sort((a, b) => b.caughtAt.localeCompare(a.caughtAt)), [snapshot.results]);
   const latestResult = sortedResults[0];
-  const latestMedia = snapshot.media.find((media) => media.id === latestResult?.fishMediaId);
   const todayResults = useMemo(() => {
     const now = new Date();
     return sortedResults.filter((result) => isSameLocalDay(new Date(result.caughtAt), now)).slice(0, 2);
@@ -133,7 +146,10 @@ export function HomeView({ homeNotice, onRouteChange, onStartSession, onToggleFa
           </div>
           <div className="trip-hero-bottom">
             <span>{currentPlace ? `${currentPlace.areaName} / ${currentPlace.pointName}` : "現在ポイント未選択"}</span>
-            <span>{activeSession ? `開始 ${formatDateTime(activeSession.startedAt)}` : "釣行前"}</span>
+            <div className="trip-start-time">
+              <small>釣行開始</small>
+              <strong>{activeSession ? formatTime(activeSession.startedAt) : "未開始"}</strong>
+            </div>
           </div>
         </div>
       </section>
@@ -144,9 +160,9 @@ export function HomeView({ homeNotice, onRouteChange, onStartSession, onToggleFa
           <strong>{currentSetup?.name ?? deletedSetupLabel()}</strong>
         </button>
         <div className="home-setup-divider" />
-        <button className="home-setup-pane" type="button" onClick={() => onRouteChange("set-select")}>
+        <button className="home-setup-pane" type="button" onClick={onEditCurrentItem}>
           <span className="home-setup-label">現在使用中</span>
-          <strong>{currentPrimaryItem?.name ?? deletedItemLabel()}</strong>
+          <strong>{compactItemName(currentPrimaryItem?.name ?? deletedItemLabel())}</strong>
         </button>
       </section>
 
@@ -221,7 +237,6 @@ export function HomeView({ homeNotice, onRouteChange, onStartSession, onToggleFa
       ) : null}
 
       {previewMedia ? <PhotoModal alt="釣果写真の拡大表示" media={previewMedia} onClose={() => setPreviewMedia(undefined)} title="釣果写真" /> : null}
-      {latestMedia ? null : null}
     </main>
   );
 }

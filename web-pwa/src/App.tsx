@@ -101,6 +101,7 @@ export default function App() {
   const [draftItemKind, setDraftItemKind] = useState<ItemKind | undefined>();
   const [selectedRiverName, setSelectedRiverName] = useState<string | undefined>();
   const [preferredRiverName, setPreferredRiverName] = useState<string | undefined>();
+  const [setupEditFocus, setSetupEditFocus] = useState<"top" | "current-item">("top");
   const [homeNotice, setHomeNotice] = useState<string | undefined>();
   const [homeScrollToken, setHomeScrollToken] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -279,8 +280,9 @@ export default function App() {
     setRoute("item-edit");
   }
 
-  function openSetupEditor(setupId?: string) {
+  function openSetupEditor(setupId?: string, focus: "top" | "current-item" = "top") {
     setEditingSetupId(setupId);
+    setSetupEditFocus(focus);
     setRoute("setup-edit");
   }
 
@@ -326,6 +328,13 @@ export default function App() {
         return (
           <HomeView
             homeNotice={homeNotice}
+            onEditCurrentItem={() => {
+              if (snapshot.appState?.currentSetupId) {
+                openSetupEditor(snapshot.appState.currentSetupId, "current-item");
+                return;
+              }
+              setRoute("set-select");
+            }}
             onRouteChange={setRoute}
             onStartSession={startSession}
             onToggleFavorite={toggleResultFavorite}
@@ -381,6 +390,7 @@ export default function App() {
       case "setup-edit":
         return (
           <SetupEditView
+            focusSection={setupEditFocus}
             setupId={editingSetupId}
             snapshot={snapshot}
             onBack={() => setRoute("setups")}

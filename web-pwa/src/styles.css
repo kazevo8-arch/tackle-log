@@ -757,49 +757,50 @@ textarea {
 }
 
 .home-screen {
-  gap: 18px;
+  gap: 16px;
+  padding-left: 14px;
+  padding-right: 14px;
 }
 
-.home-topbar {
+.home-header {
   display: grid;
-  grid-template-columns: 56px minmax(0, 1fr) 56px;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
   align-items: center;
   gap: 12px;
-  padding-top: 4px;
+  padding-top: 2px;
 }
 
-.home-topbar h1 {
+.home-header h1 {
   margin: 0;
   text-align: center;
-  font-size: 28px;
+  font-size: 22px;
   line-height: 1.2;
 }
 
-.topbar-icon-button {
-  width: 52px;
-  height: 52px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: rgb(255 255 255 / 0.92);
+.home-header-icon {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
   display: grid;
   place-items: center;
-  box-shadow: 0 6px 16px rgb(17 24 39 / 0.05);
 }
 
-.icon-bars {
+.menu-glyph {
   width: 20px;
   display: grid;
   gap: 4px;
 }
 
-.icon-bars span {
+.menu-glyph span {
   display: block;
   height: 2px;
   border-radius: 999px;
   background: var(--text);
 }
 
-.icon-bell {
+.bell-glyph {
   position: relative;
   width: 16px;
   height: 18px;
@@ -810,7 +811,7 @@ textarea {
   border-top-right-radius: 8px;
 }
 
-.icon-bell::before {
+.bell-glyph::before {
   content: "";
   position: absolute;
   top: -5px;
@@ -821,7 +822,7 @@ textarea {
   background: var(--text);
 }
 
-.icon-bell::after {
+.bell-glyph::after {
   content: "";
   position: absolute;
   left: 5px;
@@ -832,206 +833,194 @@ textarea {
   background: var(--text);
 }
 
-.home-hero {
+.trip-hero-card {
   position: relative;
-  min-height: 250px;
-  border-radius: 28px;
+  min-height: 204px;
+  border-radius: 22px;
   overflow: hidden;
   background:
-    linear-gradient(180deg, rgb(9 25 21 / 0.14), rgb(9 25 21 / 0.52)),
-    radial-gradient(circle at top right, rgb(110 139 114 / 0.22), transparent 28%),
-    linear-gradient(140deg, #1d3c32 0%, #234838 42%, #5c745f 100%);
-  box-shadow: 0 18px 30px rgb(17 24 39 / 0.12);
+    linear-gradient(180deg, rgb(9 25 21 / 0.1), rgb(9 25 21 / 0.58)),
+    radial-gradient(circle at 70% 72%, rgb(255 255 255 / 0.12), transparent 10%),
+    radial-gradient(circle at 80% 64%, rgb(255 255 255 / 0.08), transparent 8%),
+    linear-gradient(140deg, #10251d 0%, #183a2f 40%, #3d5a45 100%);
+  box-shadow: 0 10px 24px rgb(17 24 39 / 0.1);
 }
 
-.home-hero-backdrop {
+.trip-hero-overlay {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 72% 70%, rgb(255 255 255 / 0.18), transparent 12%),
-    radial-gradient(circle at 68% 76%, rgb(255 255 255 / 0.14), transparent 8%),
-    radial-gradient(circle at 76% 62%, rgb(255 255 255 / 0.12), transparent 8%),
-    linear-gradient(180deg, transparent, rgb(7 17 13 / 0.22));
+    linear-gradient(180deg, rgb(0 0 0 / 0.04), rgb(0 0 0 / 0.18)),
+    linear-gradient(90deg, rgb(0 0 0 / 0.16), transparent 48%);
 }
 
-.home-hero-content {
+.trip-hero-content {
   position: relative;
   z-index: 1;
-  min-height: 250px;
+  min-height: 204px;
   display: grid;
-  gap: 14px;
+  gap: 12px;
   align-content: start;
-  padding: 22px;
+  padding: 18px 18px 16px;
   color: white;
 }
 
-.home-hero-row,
-.home-hero-footer {
+.trip-hero-top,
+.trip-hero-bottom {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
-.hero-badge,
-.hero-map-button,
-.hero-session-button {
-  min-height: 40px;
+.trip-hero-label,
+.trip-map-button {
+  min-height: 34px;
   border-radius: 999px;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
 }
 
-.hero-badge {
+.trip-hero-label {
   display: inline-flex;
   align-items: center;
-  padding: 0 12px;
+  padding: 0 10px;
   background: rgb(255 255 255 / 0.14);
   border: 1px solid rgb(255 255 255 / 0.18);
 }
 
-.hero-map-button {
+.trip-map-button {
   border: 1px solid rgb(255 255 255 / 0.28);
   background: rgb(255 255 255 / 0.14);
   color: white;
-  padding: 0 14px;
+  padding: 0 12px;
 }
 
-.home-hero h2 {
+.trip-hero-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.trip-hero-copy h2 {
   margin: 0;
-  font-size: 44px;
-  line-height: 1.05;
+  font-size: 28px;
+  line-height: 1.08;
   letter-spacing: -0.02em;
 }
 
-.home-hero p {
+.trip-hero-copy p,
+.trip-hero-bottom span {
   margin: 0;
-  font-size: 20px;
+  font-size: 17px;
   color: rgb(255 255 255 / 0.94);
 }
 
-.hero-subtle {
-  font-size: 15px;
-  color: rgb(255 255 255 / 0.82);
+.trip-hero-bottom span:last-child {
+  font-size: 14px;
+  color: rgb(255 255 255 / 0.78);
 }
 
-.hero-session-button {
-  border: 1px solid rgb(255 255 255 / 0.24);
-  background: white;
-  color: var(--primary);
-  padding: 0 16px;
-}
-
-.home-floating-card {
-  margin-top: -54px;
-  margin-inline: 10px;
+.home-setup-card {
+  margin-top: -36px;
+  margin-inline: 8px;
   position: relative;
   z-index: 2;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr);
   gap: 0;
   align-items: center;
-  padding: 12px 10px;
-  border: 1px solid var(--line);
-  border-radius: 24px;
+  padding: 8px 6px;
+  border: 1px solid rgb(229 225 214 / 0.9);
+  border-radius: 20px;
   background: rgb(255 255 255 / 0.97);
-  box-shadow: 0 20px 30px rgb(17 24 39 / 0.12);
+  box-shadow: 0 14px 24px rgb(17 24 39 / 0.08);
 }
 
-.home-context-button {
-  min-height: 88px;
+.home-setup-pane {
+  min-height: 82px;
   border: 0;
   background: transparent;
   display: grid;
   gap: 6px;
   align-content: center;
   text-align: left;
-  padding: 6px 12px;
+  padding: 8px 14px;
 }
 
-.home-context-button strong {
-  font-size: 20px;
-  line-height: 1.25;
+.home-setup-pane strong {
+  font-size: 18px;
+  line-height: 1.28;
 }
 
-.home-context-label {
+.home-setup-label {
   color: var(--muted);
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
 }
 
-.home-context-divider {
+.home-setup-divider {
   width: 1px;
-  height: 64px;
+  height: 52px;
   background: var(--line);
 }
 
-.home-action-row {
+.home-actions {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 0.92fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
 }
 
-.home-main-action,
-.home-sub-action {
-  min-height: 72px;
-  border-radius: 20px;
-  font-size: 24px;
+.home-action-primary,
+.home-action-secondary {
+  min-height: 56px;
+  border-radius: 16px;
+  font-size: 21px;
   font-weight: 700;
 }
 
-.home-main-action {
+.home-action-primary {
   border: 0;
   background: var(--primary);
   color: white;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
-  box-shadow: 0 10px 24px rgb(24 58 47 / 0.18);
+  box-shadow: 0 8px 18px rgb(24 58 47 / 0.14);
 }
 
-.home-action-plus {
-  font-size: 34px;
-  line-height: 1;
-}
-
-.home-sub-action {
-  border: 1px solid var(--line);
+.home-action-secondary {
+  border: 1px solid #d7dadd;
   background: white;
   color: var(--text);
 }
 
-.home-section-card,
-.home-latest-summary {
+.home-card,
+.home-last-trip {
   display: grid;
-  gap: 14px;
-  padding: 18px;
-  border: 1px solid var(--line);
-  border-radius: 24px;
+  gap: 12px;
+  padding: 18px 16px;
+  border: 1px solid rgb(229 225 214 / 0.82);
+  border-radius: 20px;
   background: rgb(255 255 255 / 0.97);
-  box-shadow: 0 10px 22px rgb(17 24 39 / 0.05);
+  box-shadow: 0 8px 18px rgb(17 24 39 / 0.04);
 }
 
-.home-section-header {
+.home-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
-.home-section-header h2,
-.home-latest-summary h3 {
+.home-card-header h2,
+.home-last-trip h3 {
   margin: 0;
-  font-size: 22px;
+  font-size: 19px;
 }
 
-.section-link-button {
+.home-card-link {
   min-height: 40px;
   border: 0;
   background: transparent;
   color: var(--text);
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
 }
 
@@ -1042,9 +1031,10 @@ textarea {
 
 .home-catch-row {
   display: grid;
-  grid-template-columns: 86px minmax(0, 1fr) auto;
-  gap: 14px;
+  grid-template-columns: 76px minmax(0, 1fr) auto;
+  gap: 12px;
   align-items: center;
+  min-height: 80px;
   padding: 10px 0;
   border-top: 1px solid rgb(229 225 214 / 0.65);
 }
@@ -1055,9 +1045,9 @@ textarea {
 }
 
 .home-catch-thumb {
-  width: 86px;
-  height: 86px;
-  border-radius: 16px;
+  width: 76px;
+  height: 76px;
+  border-radius: 14px;
   object-fit: cover;
 }
 
@@ -1067,80 +1057,80 @@ textarea {
 }
 
 .home-catch-main strong {
-  font-size: 18px;
+  font-size: 20px;
 }
 
 .home-catch-main span,
-.home-catch-meta span,
+.home-catch-side span,
 .home-empty,
-.home-latest-summary p {
+.home-last-trip p {
   color: var(--muted);
-  font-size: 18px;
+  font-size: 16px;
 }
 
-.home-catch-meta {
+.home-catch-side {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   justify-items: end;
 }
 
 .favorite-toggle {
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
   border: 0;
   border-radius: 50%;
   background: rgb(217 164 65 / 0.12);
   color: var(--accent);
-  font-size: 26px;
+  font-size: 22px;
   line-height: 1;
 }
 
-.home-quick-stats {
+.quick-stats-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0;
-  border-top: 1px solid rgb(229 225 214 / 0.75);
+  border-top: 1px solid rgb(229 225 214 / 0.72);
 }
 
-.home-quick-stat {
+.quick-stat-cell {
   display: grid;
-  gap: 10px;
-  padding: 18px 10px 6px;
+  gap: 8px;
+  padding: 18px 8px 8px;
   text-align: center;
   border-left: 1px solid rgb(229 225 214 / 0.75);
 }
 
-.home-quick-stat:first-child {
+.quick-stat-cell:first-child {
   border-left: 0;
 }
 
-.home-quick-stat span {
+.quick-stat-cell span {
   color: var(--muted);
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
 }
 
-.home-quick-stat strong {
-  font-size: 20px;
+.quick-stat-cell strong {
+  font-size: 18px;
   line-height: 1.25;
 }
 
 @media (max-width: 360px) {
-  .home-hero h2 {
-    font-size: 36px;
+  .trip-hero-copy h2 {
+    font-size: 24px;
   }
 
-  .home-action-row,
-  .home-quick-stats {
+  .home-actions,
+  .quick-stats-grid {
     grid-template-columns: 1fr;
   }
 
-  .home-quick-stat {
+  .quick-stat-cell {
     border-left: 0;
     border-top: 1px solid rgb(229 225 214 / 0.75);
   }
 
-  .home-quick-stat:first-child {
+  .quick-stat-cell:first-child {
     border-top: 0;
   }
 }

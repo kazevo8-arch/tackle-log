@@ -73,6 +73,29 @@ export class FishingLogDatabase extends Dexie {
           }
         });
       });
+
+    this.version(4)
+      .stores({
+        itemCategories: "&id, kind, sortOrder",
+        items: "&id, categoryId, kind, updatedAt",
+        setups: "&id, updatedAt",
+        sessions: "&id, status, startedAt, endedAt, setupId, placeId",
+        results: "&id, sessionId, setupId, placeId, primaryItemId, *usedItemIds, species, sizeCm, caughtAt",
+        places: "&id, [riverName+areaName+pointName], isFavorite, lastUsedAt, updatedAt",
+        media: "&id, mimeType, createdAt",
+        appState: "&id, activeSessionId, currentSetupId, currentPlaceId",
+      })
+      .upgrade(async (transaction) => {
+        const results = transaction.table("results");
+        await results.toCollection().modify((result) => {
+          if (typeof result.isFavorite !== "boolean") {
+            result.isFavorite = false;
+          }
+          if (typeof result.isMemorial !== "boolean") {
+            result.isMemorial = false;
+          }
+        });
+      });
   }
 }
 

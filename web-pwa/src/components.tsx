@@ -130,3 +130,65 @@ export function BlobImage({
 
   return <img alt={alt} className={className} src={url} />;
 }
+
+export function PhotoPreviewButton({
+  alt,
+  className,
+  media,
+  onOpen,
+  placeholder,
+}: {
+  alt: string;
+  className?: string;
+  media?: Media;
+  onOpen?: () => void;
+  placeholder: string;
+}) {
+  if (!media || !onOpen) {
+    return <BlobImage alt={alt} className={className} media={media} placeholder={placeholder} />;
+  }
+
+  return (
+    <button className="image-button" type="button" onClick={onOpen}>
+      <BlobImage alt={alt} className={className} media={media} placeholder={placeholder} />
+    </button>
+  );
+}
+
+export function PhotoModal({
+  alt,
+  media,
+  onClose,
+  title,
+}: {
+  alt: string;
+  media?: Media;
+  onClose: () => void;
+  title?: string;
+}) {
+  const [url, setUrl] = useState<string | undefined>();
+
+  useEffect(() => {
+    if (!media?.blob) {
+      setUrl(undefined);
+      return;
+    }
+    const objectUrl = URL.createObjectURL(media.blob);
+    setUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [media]);
+
+  return (
+    <div aria-modal="true" className="modal-backdrop" role="dialog" onClick={onClose}>
+      <div className="photo-modal" onClick={(event) => event.stopPropagation()}>
+        <div className="photo-modal-header">
+          <h2>{title ?? "写真プレビュー"}</h2>
+          <button className="button button-secondary button-compact" type="button" onClick={onClose}>
+            閉じる
+          </button>
+        </div>
+        {url ? <img alt={alt} className="photo-modal-image" src={url} /> : <div className="large-photo-placeholder">写真なし</div>}
+      </div>
+    </div>
+  );
+}

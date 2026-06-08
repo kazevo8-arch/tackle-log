@@ -1,19 +1,20 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { AppRoute } from "../routes";
 import type { AppSnapshot } from "../App";
-import { BlobImage, FlashNotice, PhotoCard, ScreenHeader, SetupSummary } from "../components";
+import { FlashNotice, PhotoCard, PhotoModal, PhotoPreviewButton, ScreenHeader, SetupSummary } from "../components";
 import { deletedItemLabel, deletedSetupLabel } from "../domain";
 
 type HomeViewProps = {
   homeNotice?: string;
   onRouteChange: (route: AppRoute) => void;
   onStartSession: () => void;
+  onToggleFavorite: (resultId: string) => void;
   scrollToken: number;
   snapshot: AppSnapshot;
 };
 
 function formatDateTime(value?: string) {
-  if (!value) return "未記録";
+  if (!value) return "未設定";
   return new Intl.DateTimeFormat("ja-JP", {
     month: "2-digit",
     day: "2-digit",
@@ -22,7 +23,7 @@ function formatDateTime(value?: string) {
   }).format(new Date(value));
 }
 
-export function HomeView({ homeNotice, onRouteChange, onStartSession, scrollToken, snapshot }: HomeViewProps) {
+export function HomeView({ homeNotice, onRouteChange, onStartSession, onToggleFavorite, scrollToken, snapshot }: HomeViewProps) {
   const appState = snapshot.appState;
   const activeSession = snapshot.sessions.find((session) => session.id === appState?.activeSessionId);
   const currentSetup = snapshot.setups.find((setup) => setup.id === appState?.currentSetupId);
@@ -33,6 +34,7 @@ export function HomeView({ homeNotice, onRouteChange, onStartSession, scrollToke
   const latestPlace = snapshot.places.find((place) => place.id === latestResult?.placeId);
   const latestPrimaryItem = snapshot.items.find((item) => item.id === latestResult?.primaryItemId);
   const latestMedia = snapshot.media.find((media) => media.id === latestResult?.fishMediaId);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
@@ -40,7 +42,7 @@ export function HomeView({ homeNotice, onRouteChange, onStartSession, scrollToke
 
   return (
     <main className="screen-content">
-      <ScreenHeader title="ホーム" description="セット・ルアー・ポイントを選び、釣れた構成を再利用します。" />
+      <ScreenHeader title="ホーム" description="セット・ルアー・ポイントを選び、釣れた流れをそのまま次回に再利用します。" />
       <FlashNotice message={homeNotice} />
 
       <section className="panel active-panel">
@@ -69,7 +71,7 @@ export function HomeView({ homeNotice, onRouteChange, onStartSession, scrollToke
           </>
         ) : (
           <>
-            <h2>釣行は開始していません</h2>
+            <h2>釣行はまだ開始していません</h2>
             <button className="button button-secondary" type="button" onClick={onStartSession}>
               このセットで釣行開始
             </button>
@@ -81,7 +83,7 @@ export function HomeView({ homeNotice, onRouteChange, onStartSession, scrollToke
         title={currentSetup?.name ?? "今日のセット未選択"}
         photoLabel="セット"
         hint="タップして変更"
-        lines={[currentSetup ? "構成を確認して次回も再利用できます" : "セットを選ぶと釣果に自動反映されます"]}
+        lines={[currentSetup ? "実績を見ながら次も使うセットを決めます。" : "セットを選ぶと釣果に自動で紐づきます。"]}
         onClick={() => onRouteChange("set-select")}
       >
         <SetupSummary items={snapshot.items} setup={currentSetup} />
@@ -91,7 +93,7 @@ export function HomeView({ homeNotice, onRouteChange, onStartSession, scrollToke
         title={currentPrimaryItem?.name ?? "現在使用中 未選択"}
         photoLabel="使用中"
         hint="タップして変更"
-        lines={[currentPrimaryItem ? currentPrimaryItem.note || "実績メモなし" : "ルアー / フライ / 毛鉤 / 餌から選択"]}
+        lines={[currentPrimaryItem ? currentPrimaryItem.note || "いま投げている主力を記録します。" : "ルアー / フライ / 毛鉤 / 餌を選べます。"]}
         onClick={() => onRouteChange("set-select")}
       />
 
@@ -99,16 +101,16 @@ export function HomeView({ homeNotice, onRouteChange, onStartSession, scrollToke
         title={currentPlace?.riverName ?? "現在河川 未選択"}
         photoLabel="河川"
         hint="タップして変更"
-        lines={[currentPlace ? `${currentPlace.areaName} / ${currentPlace.pointName}` : "河川を選ぶとポイント候補が絞れます"]}
+        lines={[currentPlace ? `${currentPlace.areaName} / ${currentPlace.pointName}` : "河川から選ぶと、ポイント選択が分かりやすくなります。"]}
         onClick={() => onRouteChange("rivers")}
       />
 
       <PhotoCard
         badge={currentPlace?.isFavorite ? "★ お気に入り" : undefined}
-        title={currentPlace ? `${currentPlace.areaName} / ${currentPlace.pointName}` : "現在ポイント未選択"}
+        title={currentPlace ? `${currentPlace.areaName} / ${currentPlace.pointName}` : "現在ポイント 未選択"}
         photoLabel="ポイント"
         hint="タップして変更"
-        lines={[currentPlace ? currentPlace.note || "ポイントメモなし" : "ポイントを選ぶと場所実績に反映されます"]}
+        lines={[currentPlace ? currentPlace.note || "ポイントメモなし" : "ポイントを選ぶと釣果に自動で紐づきます。"]}
         onClick={() => onRouteChange("places")}
       />
 
@@ -121,18 +123,53 @@ export function HomeView({ homeNotice, onRouteChange, onStartSession, scrollToke
 
       {latestResult ? (
         <article className="result-card">
-          <BlobImage alt="最新釣果" className="result-thumb" media={latestMedia} placeholder="魚写真なし" />
+          <PhotoPreviewButton
+            alt="最新釣果の写真"
+            className="result-thumb"
+            media={latestMedia}
+            onOpen={latestMedia ? () => setPreviewOpen(true) : undefined}
+            placeholder="魚写真なし"
+          />
           <div className="result-body">
-            <h2>
-              {latestResult.species} {latestResult.sizeCm}cm
-            </h2>
-            <p>{latestPlace?.riverName ?? "河川未記録"}</p>
-            <p>{latestPlace ? `${latestPlace.areaName} / ${latestPlace.pointName}` : "ポイント未記録"}</p>
+            <div className="result-heading">
+              <h2>
+                {latestResult.species} {latestResult.sizeCm}cm
+              </h2>
+              <div className="result-flags">
+                {latestResult.isFavorite ? <span className="badge">★ お気に入り</span> : null}
+                {latestResult.isMemorial ? <span className="badge badge-outline">記念</span> : null}
+              </div>
+            </div>
+            <p>{latestPlace?.riverName ?? "河川不明"}</p>
+            <p>{latestPlace ? `${latestPlace.areaName} / ${latestPlace.pointName}` : "ポイント不明"}</p>
             <p>{latestSetup?.name ?? deletedSetupLabel()}</p>
             <p>{latestPrimaryItem?.name ?? deletedItemLabel()}</p>
+            <div className="inline-actions">
+              <button className={latestResult.isFavorite ? "chip chip-active" : "chip"} type="button" onClick={() => onToggleFavorite(latestResult.id)}>
+                {latestResult.isFavorite ? "★ お気に入り中" : "☆ お気に入り"}
+              </button>
+              {latestMedia ? (
+                <button className="chip" type="button" onClick={() => setPreviewOpen(true)}>
+                  写真を開く
+                </button>
+              ) : (
+                <span className="result-photo-note">写真なし</span>
+              )}
+            </div>
           </div>
         </article>
       ) : null}
+
+      {latestResult ? (
+        <section className="panel">
+          <p className="eyebrow">前回釣行</p>
+          <h2>{latestSetup?.name ?? deletedSetupLabel()}</h2>
+          <p>{formatDateTime(latestResult.caughtAt)}</p>
+          <p>{latestPlace ? `${latestPlace.riverName} / ${latestPlace.areaName} / ${latestPlace.pointName}` : "ポイント不明"}</p>
+        </section>
+      ) : null}
+
+      {previewOpen ? <PhotoModal alt="最新釣果の拡大写真" media={latestMedia} onClose={() => setPreviewOpen(false)} title="最新釣果の写真" /> : null}
     </main>
   );
 }

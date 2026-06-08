@@ -107,6 +107,8 @@ export type Result = {
   placeId: string;
   primaryItemId?: string;
   usedItemIds: string[];
+  isFavorite?: boolean;
+  isMemorial?: boolean;
   species: string;
   sizeCm: number;
   fishMediaId?: string;

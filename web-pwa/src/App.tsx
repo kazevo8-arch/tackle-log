@@ -294,6 +294,26 @@ export default function App() {
     setRoute(routeAfterSave);
   }
 
+  async function toggleResultFavorite(resultId: string) {
+    const result = snapshot.results.find((item) => item.id === resultId);
+    if (!result) return;
+    await db.results.update(resultId, {
+      isFavorite: !result.isFavorite,
+      updatedAt: nowIso(),
+    });
+    await refresh();
+  }
+
+  async function toggleResultMemorial(resultId: string) {
+    const result = snapshot.results.find((item) => item.id === resultId);
+    if (!result) return;
+    await db.results.update(resultId, {
+      isMemorial: !result.isMemorial,
+      updatedAt: nowIso(),
+    });
+    await refresh();
+  }
+
   function renderRoute() {
     switch (route) {
       case "home":
@@ -304,10 +324,18 @@ export default function App() {
             onStartSession={startSession}
             scrollToken={homeScrollToken}
             snapshot={snapshot}
+            onToggleFavorite={toggleResultFavorite}
           />
         );
       case "results":
-        return <ResultsView snapshot={snapshot} onAddResult={() => setRoute("result-add")} />;
+        return (
+          <ResultsView
+            snapshot={snapshot}
+            onAddResult={() => setRoute("result-add")}
+            onToggleFavorite={toggleResultFavorite}
+            onToggleMemorial={toggleResultMemorial}
+          />
+        );
       case "result-add":
         return <ResultAddView snapshot={snapshot} onRouteChange={setRoute} onSaved={() => handleSaved("home")} />;
       case "items":

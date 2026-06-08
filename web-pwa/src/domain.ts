@@ -1,4 +1,4 @@
-import type { FishingStyle, Item, ItemCategory, ItemKind, Place, Setup, SetupItemRole } from "./models";
+import type { FishingStyle, Item, ItemCategory, ItemKind, Place, Result, Setup, SetupItemRole } from "./models";
 
 export const primaryItemKinds: ItemKind[] = ["lure", "fly", "hook", "bait"];
 
@@ -123,6 +123,27 @@ export function deletedSetupLabel() {
 
 export function deletedItemLabel() {
   return "削除済み装備";
+}
+
+export function resultSetupName(result: Result, setups: Setup[]) {
+  return setups.find((setup) => setup.id === result.setupId)?.name ?? result.setupNameSnapshot ?? deletedSetupLabel();
+}
+
+export function resultItemName(result: Result, items: Item[]) {
+  return items.find((item) => item.id === result.primaryItemId)?.name ?? result.primaryItemNameSnapshot ?? deletedItemLabel();
+}
+
+export function resultRiverName(result: Result, places: Place[]) {
+  return places.find((place) => place.id === result.placeId)?.riverName ?? result.riverNameSnapshot ?? "河川不明";
+}
+
+export function resultPointLabel(result: Result, places: Place[]) {
+  const place = places.find((item) => item.id === result.placeId);
+  if (place) return `${place.areaName} / ${place.pointName}`;
+  if (result.areaNameSnapshot || result.pointNameSnapshot) {
+    return `${result.areaNameSnapshot ?? "エリア不明"} / ${result.pointNameSnapshot ?? "ポイント不明"}`;
+  }
+  return "ポイント不明";
 }
 
 export function nowIso() {

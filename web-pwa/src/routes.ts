@@ -1,6 +1,7 @@
 export type AppRoute =
   | "home"
   | "results"
+  | "result-edit"
   | "set-select"
   | "result-add"
   | "session-detail"
@@ -17,6 +18,7 @@ export type AppRoute =
 export const routes: { id: AppRoute; label: string }[] = [
   { id: "home", label: "ホーム" },
   { id: "results", label: "釣果一覧" },
+  { id: "result-edit", label: "釣果編集" },
   { id: "set-select", label: "今日のセット選択" },
   { id: "result-add", label: "釣果追加" },
   { id: "session-detail", label: "釣行詳細" },
@@ -25,7 +27,7 @@ export const routes: { id: AppRoute; label: string }[] = [
   { id: "setups", label: "セット一覧" },
   { id: "setup-edit", label: "セット編集" },
   { id: "rivers", label: "河川選択" },
-  { id: "places", label: "場所管理" },
+  { id: "places", label: "ポイント管理" },
   { id: "place-edit", label: "ポイント編集" },
   { id: "stats", label: "実績" },
   { id: "settings", label: "設定/バックアップ" },

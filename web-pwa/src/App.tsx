@@ -1,22 +1,22 @@
 import { useEffect, useState } from "react";
 import { db } from "./db";
-import { seedMockData } from "./mockData";
-import type { AppRoute } from "./routes";
-import { routes } from "./routes";
+import { nowIso, uid } from "./domain";
 import type { AppState, Item, ItemCategory, ItemKind, Media, Place, Result, Session, Setup } from "./models";
+import { routes, type AppRoute } from "./routes";
+import { seedMockData } from "./mockData";
 import { HomeView } from "./views/HomeView";
-import { ItemsView } from "./views/ItemsView";
 import { ItemEditView } from "./views/ItemEditView";
-import { SetupsView } from "./views/SetupsView";
-import { SetSelectView } from "./views/SetSelectView";
-import { SetupEditView } from "./views/SetupEditView";
-import { PlacesView } from "./views/PlacesView";
+import { ItemsView } from "./views/ItemsView";
 import { PlaceEditView } from "./views/PlaceEditView";
+import { PlacesView } from "./views/PlacesView";
 import { ResultAddView } from "./views/ResultAddView";
+import { ResultEditView } from "./views/ResultEditView";
 import { ResultsView } from "./views/ResultsView";
 import { RiversView } from "./views/RiversView";
+import { SetSelectView } from "./views/SetSelectView";
+import { SetupEditView } from "./views/SetupEditView";
+import { SetupsView } from "./views/SetupsView";
 import { StatsView } from "./views/StatsView";
-import { nowIso, uid } from "./domain";
 
 export type AppSnapshot = {
   appState?: AppState;
@@ -61,7 +61,7 @@ function PlaceholderView({ route }: { route: AppRoute }) {
       <section className="panel">
         <p className="eyebrow">Phase placeholder</p>
         <h1>{label}</h1>
-        <p>この画面は後続フェーズで実装します。MVPでは主要導線から外れるため、現在は仮表示です。</p>
+        <p>この画面はまだ仮実装です。MVPでは主導線に必要な画面から順に固めています。</p>
       </section>
     </main>
   );
@@ -76,7 +76,7 @@ function BottomNav({ route, onRouteChange }: { route: AppRoute; onRouteChange: (
   ];
 
   return (
-    <nav className="bottom-nav" aria-label="主要画面">
+    <nav className="bottom-nav" aria-label="主ナビゲーション">
       {navItems.map((item) => (
         <button
           key={item.id}
@@ -97,6 +97,7 @@ export default function App() {
   const [editingItemId, setEditingItemId] = useState<string | undefined>();
   const [editingSetupId, setEditingSetupId] = useState<string | undefined>();
   const [editingPlaceId, setEditingPlaceId] = useState<string | undefined>();
+  const [editingResultId, setEditingResultId] = useState<string | undefined>();
   const [draftItemKind, setDraftItemKind] = useState<ItemKind | undefined>();
   const [selectedRiverName, setSelectedRiverName] = useState<string | undefined>();
   const [preferredRiverName, setPreferredRiverName] = useState<string | undefined>();
@@ -219,7 +220,7 @@ export default function App() {
       });
       if (snapshot.appState?.activeSessionId) {
         await db.sessions.update(snapshot.appState.activeSessionId, {
-          setupId: setup?.id ?? snapshot.appState.currentSetupId,
+          setupId: setup?.id ?? snapshot.appState?.currentSetupId,
           currentPrimaryItemId: itemId,
           updatedAt,
         });
@@ -289,6 +290,11 @@ export default function App() {
     setRoute("place-edit");
   }
 
+  function openResultEditor(resultId: string) {
+    setEditingResultId(resultId);
+    setRoute("result-edit");
+  }
+
   async function handleSaved(routeAfterSave: AppRoute) {
     await refresh();
     setRoute(routeAfterSave);
@@ -322,9 +328,9 @@ export default function App() {
             homeNotice={homeNotice}
             onRouteChange={setRoute}
             onStartSession={startSession}
+            onToggleFavorite={toggleResultFavorite}
             scrollToken={homeScrollToken}
             snapshot={snapshot}
-            onToggleFavorite={toggleResultFavorite}
           />
         );
       case "results":
@@ -332,12 +338,22 @@ export default function App() {
           <ResultsView
             snapshot={snapshot}
             onAddResult={() => setRoute("result-add")}
+            onEditResult={openResultEditor}
             onToggleFavorite={toggleResultFavorite}
             onToggleMemorial={toggleResultMemorial}
           />
         );
       case "result-add":
         return <ResultAddView snapshot={snapshot} onRouteChange={setRoute} onSaved={() => handleSaved("home")} />;
+      case "result-edit":
+        return (
+          <ResultEditView
+            resultId={editingResultId}
+            snapshot={snapshot}
+            onBack={() => setRoute("results")}
+            onSaved={() => handleSaved("results")}
+          />
+        );
       case "items":
         return <ItemsView snapshot={snapshot} onEditItem={openItemEditor} />;
       case "item-edit":

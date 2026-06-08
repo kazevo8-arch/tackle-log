@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { AppRoute } from "../routes";
 import type { AppSnapshot } from "../App";
 import { FlashNotice, PhotoCard, PhotoModal, PhotoPreviewButton, ScreenHeader, SetupSummary } from "../components";
-import { deletedItemLabel, deletedSetupLabel } from "../domain";
+import { deletedItemLabel, deletedSetupLabel, resultItemName, resultPointLabel, resultRiverName, resultSetupName } from "../domain";
 
 type HomeViewProps = {
   homeNotice?: string;
@@ -30,9 +30,6 @@ export function HomeView({ homeNotice, onRouteChange, onStartSession, onToggleFa
   const currentPlace = snapshot.places.find((place) => place.id === appState?.currentPlaceId);
   const currentPrimaryItem = snapshot.items.find((item) => item.id === appState?.currentPrimaryItemId);
   const latestResult = [...snapshot.results].sort((a, b) => b.caughtAt.localeCompare(a.caughtAt))[0];
-  const latestSetup = snapshot.setups.find((setup) => setup.id === latestResult?.setupId);
-  const latestPlace = snapshot.places.find((place) => place.id === latestResult?.placeId);
-  const latestPrimaryItem = snapshot.items.find((item) => item.id === latestResult?.primaryItemId);
   const latestMedia = snapshot.media.find((media) => media.id === latestResult?.fishMediaId);
   const [previewOpen, setPreviewOpen] = useState(false);
 
@@ -140,10 +137,10 @@ export function HomeView({ homeNotice, onRouteChange, onStartSession, onToggleFa
                 {latestResult.isMemorial ? <span className="badge badge-outline">記念</span> : null}
               </div>
             </div>
-            <p>{latestPlace?.riverName ?? "河川不明"}</p>
-            <p>{latestPlace ? `${latestPlace.areaName} / ${latestPlace.pointName}` : "ポイント不明"}</p>
-            <p>{latestSetup?.name ?? deletedSetupLabel()}</p>
-            <p>{latestPrimaryItem?.name ?? deletedItemLabel()}</p>
+            <p>{resultRiverName(latestResult, snapshot.places)}</p>
+            <p>{resultPointLabel(latestResult, snapshot.places)}</p>
+            <p>{resultSetupName(latestResult, snapshot.setups)}</p>
+            <p>{resultItemName(latestResult, snapshot.items)}</p>
             <div className="inline-actions">
               <button className={latestResult.isFavorite ? "chip chip-active" : "chip"} type="button" onClick={() => onToggleFavorite(latestResult.id)}>
                 {latestResult.isFavorite ? "★ お気に入り中" : "☆ お気に入り"}
@@ -163,9 +160,9 @@ export function HomeView({ homeNotice, onRouteChange, onStartSession, onToggleFa
       {latestResult ? (
         <section className="panel">
           <p className="eyebrow">前回釣行</p>
-          <h2>{latestSetup?.name ?? deletedSetupLabel()}</h2>
+          <h2>{resultSetupName(latestResult, snapshot.setups)}</h2>
           <p>{formatDateTime(latestResult.caughtAt)}</p>
-          <p>{latestPlace ? `${latestPlace.riverName} / ${latestPlace.areaName} / ${latestPlace.pointName}` : "ポイント不明"}</p>
+          <p>{`${resultRiverName(latestResult, snapshot.places)} / ${resultPointLabel(latestResult, snapshot.places)}`}</p>
         </section>
       ) : null}
 

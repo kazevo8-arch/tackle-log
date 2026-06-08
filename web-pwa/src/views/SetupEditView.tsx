@@ -1,6 +1,15 @@
 import { useMemo, useState } from "react";
 import { db } from "../db";
-import { fishingStyleLabel, fishingStyleOptions, itemKindLabel, nowIso, preferredKindsForStyle, primaryItemKinds, setupItems, uid } from "../domain";
+import {
+  fishingStyleLabel,
+  fishingStyleOptions,
+  itemKindLabel,
+  nowIso,
+  preferredKindsForStyle,
+  primaryItemKinds,
+  setupItems,
+  uid,
+} from "../domain";
 import type { AppSnapshot } from "../App";
 import type { FishingStyle, ItemKind, SetupItem } from "../models";
 import { EmptyState, PhotoCard, ScreenHeader, SetupSummary } from "../components";
@@ -29,7 +38,6 @@ export function SetupEditView({ setupId, snapshot, onBack, onSaved }: SetupEditV
     () => snapshot.items.filter((item) => selectedItemIds.includes(item.id)),
     [selectedItemIds, snapshot.items],
   );
-  const currentItems = setupItems(existing, snapshot.items);
   const primaryItems = selectedItems.filter((item) => primaryItemKinds.includes(item.kind));
   const preferredKinds = preferredKindsForStyle(fishingStyle);
 
@@ -44,6 +52,7 @@ export function SetupEditView({ setupId, snapshot, onBack, onSaved }: SetupEditV
       category,
       items: snapshot.items.filter((item) => item.kind === category.kind).sort((a, b) => a.name.localeCompare(b.name, "ja-JP")),
     }));
+
   const draftSetup = {
     id: existing?.id ?? "draft",
     name: name || "新しいセット",
@@ -78,17 +87,27 @@ export function SetupEditView({ setupId, snapshot, onBack, onSaved }: SetupEditV
   async function remove() {
     if (!existing) return;
     if (snapshot.appState?.currentSetupId === existing.id) {
-      window.alert("現在使用中セットは削除できません。");
+      window.alert("現在選択中のセットは削除できません。先に別のセットへ切り替えてください。");
       return;
     }
     if (!window.confirm("このセットを削除しますか？")) return;
-    await db.setups.delete(existing.id);
+
+    const linkedResults = snapshot.results.filter((result) => result.setupId === existing.id);
+    await db.transaction("rw", [db.results, db.setups], async () => {
+      for (const result of linkedResults) {
+        await db.results.update(result.id, {
+          setupNameSnapshot: result.setupNameSnapshot ?? existing.name,
+          updatedAt: nowIso(),
+        });
+      }
+      await db.setups.delete(existing.id);
+    });
     onSaved();
   }
 
   return (
     <main className="screen-content">
-      <ScreenHeader title={existing ? "セット編集" : "セット作成"} description="セットへ装備を追加し、現在使用中候補を作ります。" />
+      <ScreenHeader title={existing ? "セット編集" : "セット追加"} description="セットに装備を追加し、現在使用中の候補まで決めます。" />
       <button className="link-button" type="button" onClick={onBack}>
         ← 戻る
       </button>
@@ -96,7 +115,7 @@ export function SetupEditView({ setupId, snapshot, onBack, onSaved }: SetupEditV
       <PhotoCard
         title={name || "新しいセット"}
         photoLabel="セット"
-        lines={[fishingStyleLabel(fishingStyle), selectedItems.length ? `${selectedItems.length}件の装備を登録中` : "装備未選択"]}
+        lines={[fishingStyleLabel(fishingStyle), selectedItems.length ? `${selectedItems.length}件の装備を選択中` : "装備未選択"]}
       >
         <SetupSummary items={snapshot.items} setup={selectedItemIds.length ? draftSetup : existing} />
       </PhotoCard>
@@ -143,7 +162,7 @@ export function SetupEditView({ setupId, snapshot, onBack, onSaved }: SetupEditV
       </section>
 
       <section className="panel">
-        <h2>現在使用中の初期値</h2>
+        <h2>現在使用中の初期候補</h2>
         {primaryItems.length ? (
           <select value={defaultPrimaryItemId} onChange={(event) => setDefaultPrimaryItemId(event.target.value)}>
             <option value="">自動で選ぶ</option>
@@ -154,7 +173,7 @@ export function SetupEditView({ setupId, snapshot, onBack, onSaved }: SetupEditV
             ))}
           </select>
         ) : (
-          <EmptyState>ルアー / フライ / 毛鉤 / 餌をセットへ追加してください。</EmptyState>
+          <EmptyState>ルアー / フライ / 毛鉤 / 餌をセットへ追加すると選べます。</EmptyState>
         )}
       </section>
 

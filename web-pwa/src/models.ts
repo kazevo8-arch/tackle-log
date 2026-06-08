@@ -109,6 +109,11 @@ export type Result = {
   usedItemIds: string[];
   isFavorite?: boolean;
   isMemorial?: boolean;
+  setupNameSnapshot?: string;
+  primaryItemNameSnapshot?: string;
+  riverNameSnapshot?: string;
+  areaNameSnapshot?: string;
+  pointNameSnapshot?: string;
   species: string;
   sizeCm: number;
   fishMediaId?: string;

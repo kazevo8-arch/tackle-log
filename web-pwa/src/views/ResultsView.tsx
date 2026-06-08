@@ -1,12 +1,13 @@
 import { useState } from "react";
 import type { AppSnapshot } from "../App";
 import { EmptyState, PhotoModal, PhotoPreviewButton, ScreenHeader } from "../components";
-import { deletedItemLabel, deletedSetupLabel } from "../domain";
+import { resultItemName, resultPointLabel, resultRiverName, resultSetupName } from "../domain";
 import type { Media, Result } from "../models";
 
 type ResultsViewProps = {
   snapshot: AppSnapshot;
   onAddResult: () => void;
+  onEditResult: (resultId: string) => void;
   onToggleFavorite: (resultId: string) => void;
   onToggleMemorial: (resultId: string) => void;
 };
@@ -22,6 +23,7 @@ function formatDate(value: string) {
 
 function ResultCard({
   media,
+  onEditResult,
   onOpenPhoto,
   onToggleFavorite,
   onToggleMemorial,
@@ -29,16 +31,13 @@ function ResultCard({
   snapshot,
 }: {
   media?: Media;
+  onEditResult: () => void;
   onOpenPhoto: () => void;
   onToggleFavorite: () => void;
   onToggleMemorial: () => void;
   result: Result;
   snapshot: AppSnapshot;
 }) {
-  const place = snapshot.places.find((item) => item.id === result.placeId);
-  const setup = snapshot.setups.find((item) => item.id === result.setupId);
-  const primaryItem = snapshot.items.find((item) => item.id === result.primaryItemId);
-
   return (
     <article className="result-card">
       <PhotoPreviewButton
@@ -59,16 +58,19 @@ function ResultCard({
           </div>
         </div>
         <p>{formatDate(result.caughtAt)}</p>
-        <p>{place ? place.riverName : "河川不明"}</p>
-        <p>{place ? `${place.areaName} / ${place.pointName}` : "ポイント不明"}</p>
-        <p>{setup?.name ?? deletedSetupLabel()}</p>
-        <p>{primaryItem?.name ?? deletedItemLabel()}</p>
+        <p>{resultRiverName(result, snapshot.places)}</p>
+        <p>{resultPointLabel(result, snapshot.places)}</p>
+        <p>{resultSetupName(result, snapshot.setups)}</p>
+        <p>{resultItemName(result, snapshot.items)}</p>
         <div className="inline-actions">
           <button className={result.isFavorite ? "chip chip-active" : "chip"} type="button" onClick={onToggleFavorite}>
             {result.isFavorite ? "★ お気に入り中" : "☆ お気に入り"}
           </button>
           <button className={result.isMemorial ? "chip chip-active" : "chip"} type="button" onClick={onToggleMemorial}>
             {result.isMemorial ? "記念に設定中" : "記念"}
+          </button>
+          <button className="chip" type="button" onClick={onEditResult}>
+            編集
           </button>
           {media ? (
             <button className="chip" type="button" onClick={onOpenPhoto}>
@@ -83,7 +85,7 @@ function ResultCard({
   );
 }
 
-export function ResultsView({ snapshot, onAddResult, onToggleFavorite, onToggleMemorial }: ResultsViewProps) {
+export function ResultsView({ snapshot, onAddResult, onEditResult, onToggleFavorite, onToggleMemorial }: ResultsViewProps) {
   const sortedResults = [...snapshot.results].sort((a, b) => b.caughtAt.localeCompare(a.caughtAt));
   const [previewMedia, setPreviewMedia] = useState<Media | undefined>();
 
@@ -101,6 +103,7 @@ export function ResultsView({ snapshot, onAddResult, onToggleFavorite, onToggleM
             <ResultCard
               key={result.id}
               media={media}
+              onEditResult={() => onEditResult(result.id)}
               onOpenPhoto={() => setPreviewMedia(media)}
               onToggleFavorite={() => onToggleFavorite(result.id)}
               onToggleMemorial={() => onToggleMemorial(result.id)}

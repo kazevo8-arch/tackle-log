@@ -1,4 +1,8 @@
 const STORAGE_KEY = "tackle-log-mvp-v2";
+const PHOTO_DB_NAME = "tackle-log-photos";
+const PHOTO_STORE_NAME = "photos";
+const PHOTO_PREFIX = "idb:";
+const MAX_PHOTO_SIZE = 8 * 1024 * 1024;
 const TEXT = {
   noRecord: "未記録",
   monthSuffix: "月",
@@ -8,6 +12,8 @@ const previewConfig = getPreviewConfig();
 const state = loadState();
 let modal = null;
 let toastTimer = null;
+let toastMessage = "";
+const photoObjectUrls = new Map();
 
 boot();
 
@@ -196,6 +202,104 @@ function loadState() {
 function persist() {
   if (previewConfig.active) return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function openPhotoDb() {
+  return new Promise((resolve, reject) => {
+    if (!("indexedDB" in window)) {
+      reject(new Error("IndexedDBが使えません。"));
+      return;
+    }
+
+    const request = indexedDB.open(PHOTO_DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      request.result.createObjectStore(PHOTO_STORE_NAME);
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error || new Error("写真DBを開けませんでした。"));
+  });
+}
+
+function photoKeyToId(path) {
+  return String(path || "").startsWith(PHOTO_PREFIX) ? String(path).slice(PHOTO_PREFIX.length) : "";
+}
+
+function runPhotoStore(mode, callback) {
+  return openPhotoDb().then(
+    (db) =>
+      new Promise((resolve, reject) => {
+        const transaction = db.transaction(PHOTO_STORE_NAME, mode);
+        const store = transaction.objectStore(PHOTO_STORE_NAME);
+        const request = callback(store);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error("写真保存に失敗しました。"));
+        transaction.oncomplete = () => db.close();
+        transaction.onerror = () => {
+          db.close();
+          reject(transaction.error || new Error("写真保存に失敗しました。"));
+        };
+      }),
+  );
+}
+
+function isDngFile(file) {
+  const name = String(file?.name || "").toLowerCase();
+  const type = String(file?.type || "").toLowerCase();
+  return name.endsWith(".dng") || type.includes("dng") || type.includes("adobe");
+}
+
+function assertPhotoFile(file) {
+  if (!file || file.size === 0) return;
+  if (isDngFile(file)) {
+    throw new Error("DNG写真はMVPでは保存できません。JPG、PNG、HEICを選んでください。");
+  }
+  if (file.size > MAX_PHOTO_SIZE) {
+    throw new Error("写真が大きすぎます。8MB以下の写真を選んでください。");
+  }
+  if (file.type && !file.type.startsWith("image/")) {
+    throw new Error("画像ファイルを選んでください。");
+  }
+}
+
+async function savePhotoFile(file) {
+  if (!file || file.size === 0) return "";
+  assertPhotoFile(file);
+  const id = uid("photo");
+  await runPhotoStore("readwrite", (store) =>
+    store.put(
+      {
+        blob: file,
+        name: file.name || "",
+        type: file.type || "image/*",
+        created_at: nowIso(),
+      },
+      id,
+    ),
+  );
+  return `${PHOTO_PREFIX}${id}`;
+}
+
+async function loadPhotoUrl(path) {
+  if (!path) return "";
+  if (!String(path).startsWith(PHOTO_PREFIX)) return path;
+  const id = photoKeyToId(path);
+  if (!id) return "";
+  if (photoObjectUrls.has(id)) return photoObjectUrls.get(id);
+  const record = await runPhotoStore("readonly", (store) => store.get(id));
+  const blob = record?.blob;
+  if (!blob) return "";
+  const url = URL.createObjectURL(blob);
+  photoObjectUrls.set(id, url);
+  return url;
+}
+
+async function deleteStoredPhoto(path) {
+  const id = photoKeyToId(path);
+  if (!id) return;
+  await runPhotoStore("readwrite", (store) => store.delete(id));
+  const url = photoObjectUrls.get(id);
+  if (url) URL.revokeObjectURL(url);
+  photoObjectUrls.delete(id);
 }
 
 function uid(prefix) {
@@ -398,16 +502,25 @@ function go(route) {
 }
 
 function showToast(message) {
+  toastMessage = message;
+  mountToast();
+}
+
+function mountToast() {
   const app = document.getElementById("app");
   if (!app) return;
   const previous = app.querySelector(".toast");
   if (previous) previous.remove();
+  if (!toastMessage) return;
   const toast = document.createElement("div");
   toast.className = "toast";
-  toast.textContent = message;
+  toast.textContent = toastMessage;
   app.appendChild(toast);
   if (toastTimer) window.clearTimeout(toastTimer);
-  toastTimer = window.setTimeout(() => toast.remove(), 2400);
+  toastTimer = window.setTimeout(() => {
+    toastMessage = "";
+    toast.remove();
+  }, 2400);
 }
 
 function initials(value) {
@@ -416,9 +529,29 @@ function initials(value) {
 
 function photoMarkup(path, label) {
   if (path) {
+    if (String(path).startsWith(PHOTO_PREFIX)) {
+      return `<div class="photo photo-loading" data-photo-key="${escapeAttr(path)}">${escapeHtml(initials(label))}</div>`;
+    }
     return `<div class="photo"><img src="${escapeAttr(path)}" alt="${escapeAttr(label)}" /></div>`;
   }
   return `<div class="photo">${escapeHtml(initials(label))}</div>`;
+}
+
+function hydratePhotos() {
+  document.querySelectorAll("[data-photo-key]").forEach((element) => {
+    const key = element.dataset.photoKey;
+    loadPhotoUrl(key)
+      .then((url) => {
+        if (!url || !element.isConnected) return;
+        element.classList.remove("photo-loading");
+        element.innerHTML = `<img src="${escapeAttr(url)}" alt="写真" />`;
+      })
+      .catch(() => {
+        if (!element.isConnected) return;
+        element.classList.add("photo-error");
+        element.title = "写真を読み込めませんでした";
+      });
+  });
 }
 
 function roleLabel(role) {
@@ -426,8 +559,11 @@ function roleLabel(role) {
     rod: "ロッド",
     reel: "リール",
     line: "ライン",
+    leader: "リーダー",
     lure: "ルアー",
     fly: "フライ",
+    hook: "毛鉤",
+    bait: "餌",
     hook_bait: "毛鉤 / 餌",
     other: "その他",
   };
@@ -478,6 +614,8 @@ function render() {
   `;
 
   bindEvents();
+  hydratePhotos();
+  mountToast();
 }
 
 function renderScreen(currentSet, performance) {
@@ -623,6 +761,7 @@ function renderSetupScreen(performance) {
     ${renderHeader("今日のセット", "最速でセットを選ぶ", filterGear ? `${filterGear.name} を使うセットだけを表示しています。` : "ここでは編集よりも選択速度を優先します。")}
     <div class="content stack">
       ${filterGear ? `<div class="top-note">フィルター中: ${escapeHtml(filterGear.name)} を含むセット</div>` : ""}
+      <button class="button button-secondary" data-action="open-add-set">＋ 新しいセット</button>
       <div class="card-list">
         ${
           sets.length
@@ -645,6 +784,11 @@ function renderSetupScreen(performance) {
                         <div class="summary-item"><span class="summary-key">最終使用日</span><span class="summary-value">${formatDate(summary.lastUsedAt)}</span></div>
                       </div>
                       <button class="button button-primary button-inline" data-action="choose-set" data-set-id="${set.id}">このセットを使う</button>
+                      <div class="card-actions">
+                        <button class="button button-ghost button-small" data-action="open-edit-set" data-set-id="${set.id}">編集</button>
+                        <button class="button button-ghost button-small" data-action="duplicate-set" data-set-id="${set.id}">複製</button>
+                        <button class="button button-ghost button-small button-danger" data-action="delete-set" data-set-id="${set.id}">削除</button>
+                      </div>
                     </div>
                   `;
                 })
@@ -688,8 +832,9 @@ function renderAddCatch(currentSet) {
   }
 
   const setGear = getSetGear(currentSet.id);
+  const primaryGearTypes = ["lure", "fly", "hook", "bait", "hook_bait"];
   const primaryOptions = setGear.filter((item) =>
-    ["lure", "fly", "hook_bait"].includes(item.role) || ["lure", "fly", "hook_bait"].includes(item.type),
+    primaryGearTypes.includes(item.role) || primaryGearTypes.includes(item.type),
   );
 
   return `
@@ -699,7 +844,7 @@ function renderAddCatch(currentSet) {
         <div class="panel">
           <p class="field-label">魚種</p>
           <div class="chip-grid">
-            ${["ヤマメ", "イワナ", "ニジマス", "その他"]
+            ${["ヤマメ", "アマゴ", "イワナ", "ニジマス", "その他"]
               .map((label) => `<button type="button" class="chip" data-action="species-preset" data-value="${label}">${label}</button>`)
               .join("")}
           </div>
@@ -738,8 +883,9 @@ function renderAddCatch(currentSet) {
 
         <div class="panel">
           <p class="field-label">写真</p>
-          <input id="photo-input" class="text-input" type="file" accept="image/*" />
-          <p class="hint">写真なしでも保存できます。</p>
+          <input id="photo-input" class="text-input" type="file" accept="image/*,.heic,.heif" />
+          <button type="button" class="link-button" data-action="clear-file" data-input-id="photo-input">写真を削除</button>
+          <p class="hint">写真なしでも保存できます。DNGはMVPでは非対応です。</p>
         </div>
 
         <button class="button button-primary" type="submit">保存する</button>
@@ -833,6 +979,7 @@ function renderSetDetail() {
   return `
     ${renderHeader("セット詳細", set.name, "このセットがまた使いたくなるかを、最大魚と最近の釣果から先に確認します。")}
     <div class="content stack">
+      <button class="link-button back-button" data-action="back-to-setup">← 戻る</button>
       <div class="panel">
         <h2 class="section-title">最大魚</h2>
         <div class="hero-meta">
@@ -848,12 +995,15 @@ function renderSetDetail() {
             recentCatches.length
               ? recentCatches
                   .map((item) => `
-                    <div class="history-item">
-                      <div class="ranking-top">
-                        <div class="ranking-name">${escapeHtml(item.species || "魚種未入力")}</div>
-                        <div class="ranking-value">${item.size_cm ? `${item.size_cm}cm` : TEXT.noRecord}</div>
+                    <div class="history-item history-with-photo">
+                      ${photoMarkup(item.photo_path, item.species || "釣果")}
+                      <div>
+                        <div class="ranking-top">
+                          <div class="ranking-name">${escapeHtml(item.species || "魚種未入力")}</div>
+                          <div class="ranking-value">${item.size_cm ? `${item.size_cm}cm` : TEXT.noRecord}</div>
+                        </div>
+                        <div class="ranking-meta">${formatDate(item.caught_at)}</div>
                       </div>
-                      <div class="ranking-meta">${formatDate(item.caught_at)}</div>
                     </div>
                   `)
                   .join("")
@@ -922,7 +1072,20 @@ function renderGearDetail() {
   return `
     ${renderHeader("道具詳細", gear.name, "この道具がどのセットの再利用につながるかを確認します。")}
     <div class="content stack">
+      <button class="link-button back-button" data-action="back-to-performance">← 戻る</button>
       <div class="panel">
+        <div class="setup-hero" style="margin-bottom: 12px;">
+          ${photoMarkup(gear.photo_path, gear.name)}
+          <div>
+            <h2 class="setup-name">${escapeHtml(gear.name)}</h2>
+            <p class="setup-gear">${escapeHtml(roleLabel(gear.type))}</p>
+          </div>
+        </div>
+        ${
+          gear.photo_path
+            ? `<button class="link-button" data-action="remove-gear-photo" data-gear-id="${gear.id}">写真を削除</button>`
+            : ""
+        }
         <div class="summary-list">
           <div class="summary-item"><span class="summary-key">釣果数</span><span class="summary-value">${catches.length}匹</span></div>
           <div class="summary-item"><span class="summary-key">最大サイズ</span><span class="summary-value">${sizes.length ? `${Math.max(...sizes)}cm` : TEXT.noRecord}</span></div>
@@ -941,11 +1104,16 @@ function renderGearDetail() {
                   .map(
                     (item) => `
                       <div class="history-item">
-                        <div class="ranking-top">
-                          <div class="ranking-name">${escapeHtml(item.species || "魚種未入力")}</div>
-                          <div class="ranking-value">${item.size_cm ? `${item.size_cm}cm` : TEXT.noRecord}</div>
+                        <div class="history-with-photo">
+                          ${photoMarkup(item.photo_path, item.species || "釣果")}
+                          <div>
+                            <div class="ranking-top">
+                              <div class="ranking-name">${escapeHtml(item.species || "魚種未入力")}</div>
+                              <div class="ranking-value">${item.size_cm ? `${item.size_cm}cm` : TEXT.noRecord}</div>
+                            </div>
+                            <div class="ranking-meta">${formatDate(item.caught_at)} / ${escapeHtml(getSetById(item.set_id)?.name || "")}</div>
+                          </div>
                         </div>
-                        <div class="ranking-meta">${formatDate(item.caught_at)} / ${escapeHtml(getSetById(item.set_id)?.name || "")}</div>
                       </div>
                     `,
                   )
@@ -991,7 +1159,7 @@ function renderNav() {
   const items = [
     { key: "home", label: "ホーム" },
     { key: "setup", label: "セット" },
-    { key: "add-catch", label: "追加", primary: true },
+    { key: "add-catch", label: "釣果", primary: true },
     { key: "performance", label: "実績" },
   ];
 
@@ -1025,18 +1193,69 @@ function renderModal() {
         <div class="sheet" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
           <h2 class="sheet-title">装備を追加する</h2>
           <form id="add-gear-form" class="field-grid">
+            <div>
+              <p class="field-label">登録済み装備から追加</p>
+              <select class="select-input" name="existing_gear_id">
+                <option value="">新しい装備を登録する</option>
+                ${state.db.gear
+                  .map((gear) => `<option value="${gear.id}">${escapeHtml(roleLabel(gear.type))}: ${escapeHtml(gear.name)}</option>`)
+                  .join("")}
+              </select>
+            </div>
             <select class="select-input" name="role" required>
+              <option value="rod">ロッド</option>
               <option value="reel">リール</option>
               <option value="line">ライン</option>
+              <option value="leader">リーダー</option>
               <option value="lure">ルアー</option>
               <option value="fly">フライ</option>
-              <option value="hook_bait">毛鉤 / 餌</option>
+              <option value="hook">毛鉤</option>
+              <option value="bait">餌</option>
               <option value="other">その他</option>
             </select>
-            <input class="text-input" name="name" placeholder="装備名" required />
-            <input class="text-input" type="file" name="photo" accept="image/*" />
+            <input class="text-input" name="name" placeholder="新しい装備名" />
+            <input id="gear-photo-input" class="text-input" type="file" name="photo" accept="image/*,.heic,.heif" />
+            <button type="button" class="link-button" data-action="clear-file" data-input-id="gear-photo-input">写真を削除</button>
+            <p class="hint">DNGはMVPでは保存できません。JPG、PNG、HEICを選んでください。</p>
             <div class="sheet-actions">
               <button class="button button-primary" type="submit">追加する</button>
+              <button class="button button-ghost sheet-close" type="button" data-action="close-modal">閉じる</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+  }
+
+  if (modal?.type === "add-set" || modal?.type === "edit-set") {
+    const set = modal.type === "edit-set" ? getSetById(modal.setId) : null;
+    return `
+      <div class="sheet-backdrop" data-action="close-modal">
+        <div class="sheet" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+          <h2 class="sheet-title">${modal.type === "edit-set" ? "セットを編集する" : "新しいセットを作る"}</h2>
+          <form id="set-form" class="field-grid">
+            <input type="hidden" name="set_id" value="${escapeAttr(set?.id || "")}" />
+            <div>
+              <p class="field-label">セット名</p>
+              <input class="text-input" name="set_name" value="${escapeAttr(set?.name || "")}" placeholder="例: 渓流ベイト2026" required />
+            </div>
+            <div>
+              <p class="field-label">ロッド名</p>
+              <input class="text-input" name="rod_name" placeholder="新規作成時だけ入力" ${modal.type === "add-set" ? "required" : ""} />
+            </div>
+            <div>
+              <p class="field-label">セット写真</p>
+              <input id="set-photo-input" class="text-input" type="file" name="photo" accept="image/*,.heic,.heif" />
+              <button type="button" class="link-button" data-action="clear-file" data-input-id="set-photo-input">写真を削除</button>
+              ${
+                set?.photo_path
+                  ? `<button type="button" class="link-button" data-action="remove-set-photo" data-set-id="${set.id}">保存済み写真を削除</button>`
+                  : ""
+              }
+              <p class="hint">写真なしでも保存できます。DNGはMVPでは非対応です。</p>
+            </div>
+            <div class="sheet-actions">
+              <button class="button button-primary" type="submit">保存する</button>
               <button class="button button-ghost sheet-close" type="button" data-action="close-modal">閉じる</button>
             </div>
           </form>
@@ -1061,6 +1280,9 @@ function bindEvents() {
 
   const addGearForm = document.getElementById("add-gear-form");
   if (addGearForm) addGearForm.addEventListener("submit", handleAddGearSubmit);
+
+  const setForm = document.getElementById("set-form");
+  if (setForm) setForm.addEventListener("submit", handleSetSubmit);
 }
 
 function handleAction(event) {
@@ -1162,9 +1384,58 @@ function handleAction(event) {
     return;
   }
 
+  if (action === "clear-file") {
+    const input = document.getElementById(event.currentTarget.dataset.inputId);
+    if (input) input.value = "";
+    showToast("写真を未選択に戻しました。");
+    return;
+  }
+
   if (action === "open-add-gear") {
     modal = { type: "add-gear", setId: event.currentTarget.dataset.setId };
     render();
+    return;
+  }
+
+  if (action === "open-add-set") {
+    modal = { type: "add-set" };
+    render();
+    return;
+  }
+
+  if (action === "open-edit-set") {
+    modal = { type: "edit-set", setId: event.currentTarget.dataset.setId };
+    render();
+    return;
+  }
+
+  if (action === "duplicate-set") {
+    duplicateSet(event.currentTarget.dataset.setId);
+    return;
+  }
+
+  if (action === "delete-set") {
+    deleteSet(event.currentTarget.dataset.setId);
+    return;
+  }
+
+  if (action === "remove-set-photo") {
+    removeSetPhoto(event.currentTarget.dataset.setId);
+    return;
+  }
+
+  if (action === "remove-gear-photo") {
+    removeGearPhoto(event.currentTarget.dataset.gearId);
+    return;
+  }
+
+  if (action === "back-to-setup") {
+    go("setup");
+    return;
+  }
+
+  if (action === "back-to-performance") {
+    go("performance");
     return;
   }
 
@@ -1223,7 +1494,7 @@ function handleOnboardingSubmit(event) {
   render();
 }
 
-function handleCatchSubmit(event) {
+async function handleCatchSubmit(event) {
   event.preventDefault();
   if (!state.selectedSetId) {
     state.route = "setup";
@@ -1237,8 +1508,11 @@ function handleCatchSubmit(event) {
   const sizeValue = form.querySelector('[name="size_cm"]').value;
   const gearId = form.querySelector('[name="primary_gear_id"]').value;
   const photoFile = form.querySelector("#photo-input")?.files?.[0];
+  const submit = form.querySelector('[type="submit"]');
+  if (submit) submit.disabled = true;
 
-  const completeSave = (photoPath = "") => {
+  try {
+    const photoPath = await savePhotoFile(photoFile);
     state.db.catches.push({
       id: uid("catch"),
       set_id: state.selectedSetId,
@@ -1255,31 +1529,54 @@ function handleCatchSubmit(event) {
       state.metrics.reusedSetCatchAdds += 1;
     }
     persist();
-    showToast("釣果を保存しました。");
     go("performance");
-  };
-
-  if (photoFile) {
-    const reader = new FileReader();
-    reader.onload = () => completeSave(typeof reader.result === "string" ? reader.result : "");
-    reader.readAsDataURL(photoFile);
-    return;
+    showToast("保存しました");
+  } catch (error) {
+    showToast(error?.message || "保存に失敗しました");
+    if (submit) submit.disabled = false;
   }
-
-  completeSave("");
 }
 
-function handleAddGearSubmit(event) {
+async function handleAddGearSubmit(event) {
   event.preventDefault();
   if (!modal?.setId) return;
 
   const form = new FormData(event.currentTarget);
   const role = String(form.get("role") || "");
+  const existingGearId = String(form.get("existing_gear_id") || "");
   const name = String(form.get("name") || "").trim();
   const photo = form.get("photo");
-  if (!role || !name) return;
+  if (!role) return;
+  if (!existingGearId && !name) {
+    showToast("装備名を入力してください");
+    return;
+  }
+  const setId = modal.setId;
+  const submit = event.currentTarget.querySelector('[type="submit"]');
+  if (submit) submit.disabled = true;
 
-  const createRecord = (photoPath = "") => {
+  try {
+    if (existingGearId) {
+      const existingGear = getGearById(existingGearId);
+      if (!existingGear) throw new Error("登録済み装備が見つかりません。");
+      const alreadyLinked = state.db.setGear.some((link) => link.set_id === setId && link.gear_id === existingGearId);
+      if (alreadyLinked) throw new Error("この装備はすでにセットに入っています。");
+      state.db.setGear.push({
+        id: uid("setgear"),
+        set_id: setId,
+        gear_id: existingGearId,
+        role: existingGear.type || role,
+      });
+      const set = getSetById(setId);
+      if (set) set.updated_at = nowIso();
+      modal = null;
+      persist();
+      render();
+      showToast("保存しました");
+      return;
+    }
+
+    const photoPath = photo instanceof File && photo.size > 0 ? await savePhotoFile(photo) : "";
     const gearId = uid("gear");
     state.db.gear.push({
       id: gearId,
@@ -1290,24 +1587,157 @@ function handleAddGearSubmit(event) {
     });
     state.db.setGear.push({
       id: uid("setgear"),
-      set_id: modal.setId,
+      set_id: setId,
       gear_id: gearId,
       role,
     });
-    const set = getSetById(modal.setId);
+    const set = getSetById(setId);
     if (set) set.updated_at = nowIso();
     modal = null;
     persist();
-    showToast("装備を追加しました。");
     render();
-  };
+    showToast("保存しました");
+  } catch (error) {
+    showToast(error?.message || "保存に失敗しました");
+    if (submit) submit.disabled = false;
+  }
+}
 
-  if (photo instanceof File && photo.size > 0) {
-    const reader = new FileReader();
-    reader.onload = () => createRecord(typeof reader.result === "string" ? reader.result : "");
-    reader.readAsDataURL(photo);
+async function handleSetSubmit(event) {
+  event.preventDefault();
+  const formElement = event.currentTarget;
+  const form = new FormData(formElement);
+  const setName = String(form.get("set_name") || "").trim();
+  const rodName = String(form.get("rod_name") || "").trim();
+  const photo = form.get("photo");
+  const submit = formElement.querySelector('[type="submit"]');
+  if (!setName) return;
+  if (modal?.type === "add-set" && !rodName) return;
+  if (submit) submit.disabled = true;
+
+  try {
+    const photoPath = photo instanceof File && photo.size > 0 ? await savePhotoFile(photo) : "";
+    const updatedAt = nowIso();
+
+    if (modal?.type === "edit-set") {
+      const set = getSetById(String(form.get("set_id") || ""));
+      if (!set) throw new Error("セットが見つかりません。");
+      set.name = setName;
+      if (photoPath) set.photo_path = photoPath;
+      set.updated_at = updatedAt;
+    } else {
+      const setId = uid("set");
+      const rodId = uid("gear");
+      state.db.sets.push({
+        id: setId,
+        name: setName,
+        photo_path: photoPath,
+        created_at: updatedAt,
+        updated_at: updatedAt,
+      });
+      state.db.gear.push({
+        id: rodId,
+        type: "rod",
+        name: rodName,
+        photo_path: "",
+        created_at: updatedAt,
+      });
+      state.db.setGear.push({
+        id: uid("setgear"),
+        set_id: setId,
+        gear_id: rodId,
+        role: "rod",
+      });
+      state.selectedSetId = setId;
+      state.currentSetOrigin = "manual";
+    }
+
+    modal = null;
+    persist();
+    render();
+    showToast("保存しました");
+  } catch (error) {
+    showToast(error?.message || "保存に失敗しました");
+    if (submit) submit.disabled = false;
+  }
+}
+
+function duplicateSet(setId) {
+  const source = getSetById(setId);
+  if (!source) {
+    showToast("保存に失敗しました");
     return;
   }
 
-  createRecord("");
+  const newSetId = uid("set");
+  const createdAt = nowIso();
+  state.db.sets.push({
+    id: newSetId,
+    name: `${source.name} コピー`,
+    photo_path: source.photo_path,
+    created_at: createdAt,
+    updated_at: createdAt,
+  });
+  state.db.setGear
+    .filter((link) => link.set_id === source.id)
+    .forEach((link) => {
+      state.db.setGear.push({
+        id: uid("setgear"),
+        set_id: newSetId,
+        gear_id: link.gear_id,
+        role: link.role,
+      });
+    });
+  state.selectedSetId = newSetId;
+  state.currentSetOrigin = "manual";
+  persist();
+  render();
+  showToast("セットを複製しました");
+}
+
+function deleteSet(setId) {
+  const set = getSetById(setId);
+  if (!set) return;
+  if (!window.confirm("このセットを削除しますか？")) return;
+
+  state.db.sets = state.db.sets.filter((item) => item.id !== setId);
+  state.db.setGear = state.db.setGear.filter((link) => link.set_id !== setId);
+  state.db.catches = state.db.catches.filter((item) => item.set_id !== setId);
+  if (state.selectedSetId === setId) {
+    state.selectedSetId = state.db.sets[0]?.id || null;
+    state.currentSetOrigin = "manual";
+  }
+  if (state.viewingSetId === setId) state.viewingSetId = null;
+  state.route = state.db.sets.length ? "setup" : "home";
+  state.onboarding = state.db.sets.length === 0;
+  persist();
+  render();
+  showToast("セットを削除しました");
+}
+
+async function removeSetPhoto(setId) {
+  const set = getSetById(setId);
+  if (!set?.photo_path) return;
+  try {
+    set.photo_path = "";
+    set.updated_at = nowIso();
+    persist();
+    render();
+    showToast("写真を削除しました");
+  } catch {
+    showToast("保存に失敗しました");
+  }
+}
+
+async function removeGearPhoto(gearId) {
+  const gear = getGearById(gearId);
+  if (!gear?.photo_path) return;
+  try {
+    gear.photo_path = "";
+    persist();
+    render();
+    showToast("写真を削除しました");
+  } catch {
+    showToast("保存に失敗しました");
+  }
 }

@@ -1,4 +1,4 @@
-const CACHE_NAME = "tackle-log-mvp-cache-v2";
+const CACHE_NAME = "tackle-log-mvp-cache-v3";
 const ASSETS = [
   "./",
   "./index.html",

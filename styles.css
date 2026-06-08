@@ -35,6 +35,7 @@ body {
     "Yu Gothic",
     "YuGothic",
     sans-serif;
+  overflow-x: hidden;
 }
 
 body {
@@ -60,6 +61,7 @@ button {
 
 .shell {
   width: min(100%, var(--screen-width));
+  max-width: 100%;
   min-height: calc(100dvh - max(12px, var(--safe-top)) - max(12px, var(--safe-bottom)));
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.28)),
@@ -115,6 +117,9 @@ button {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 16px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .section-title {
@@ -158,6 +163,13 @@ button {
   align-items: center;
   justify-content: center;
   gap: 10px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.button:disabled {
+  opacity: 0.62;
+  cursor: progress;
 }
 
 .button-primary {
@@ -198,6 +210,9 @@ button {
   justify-content: space-between;
   gap: 12px;
   font-size: 20px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .summary-key {
@@ -207,6 +222,9 @@ button {
 .summary-value {
   font-weight: 700;
   text-align: right;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .card-list {
@@ -224,6 +242,11 @@ button {
   grid-template-columns: 84px 1fr;
   gap: 14px;
   align-items: center;
+  min-width: 0;
+}
+
+.setup-hero > div {
+  min-width: 0;
 }
 
 .photo {
@@ -252,6 +275,8 @@ button {
   font-size: 24px;
   line-height: 1.2;
   font-weight: 700;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .setup-gear {
@@ -259,6 +284,25 @@ button {
   font-size: 18px;
   color: var(--muted);
   line-height: 1.4;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.card-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.button-small {
+  min-height: 56px;
+  padding: 10px 8px;
+  font-size: 18px;
+  text-align: center;
+}
+
+.button-danger {
+  color: #8b2d23;
 }
 
 .chip-grid {
@@ -342,27 +386,53 @@ button {
   gap: 8px;
 }
 
+.history-with-photo {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+}
+
+.history-with-photo .photo {
+  width: 64px;
+  height: 64px;
+  font-size: 24px;
+}
+
+.history-with-photo > div {
+  min-width: 0;
+}
+
 .ranking-top {
   display: flex;
   justify-content: space-between;
   gap: 12px;
   align-items: start;
+  min-width: 0;
 }
 
 .ranking-name {
   font-size: 21px;
   font-weight: 700;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .ranking-value {
   font-size: 20px;
   font-weight: 700;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-align: right;
 }
 
 .ranking-meta {
   font-size: 18px;
   color: var(--muted);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .link-button {
